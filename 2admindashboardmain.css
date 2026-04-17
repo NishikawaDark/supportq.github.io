@@ -1,0 +1,150 @@
+.main { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+        .breadcrumb { font-size: 12px; color: #8a97a8; font-weight: 600; }
+        .breadcrumb span { color: #132A3F; }
+        .page-header { display: flex; align-items: center; gap: 12px; }
+        .page-header-icon {
+            width: 42px; height: 42px; border-radius: 12px;
+            background: linear-gradient(135deg, #f9a825, #f9d338);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 18px;
+        }
+        .page-header h1 { font-size: 22px; font-weight: 800; color: #132A3F; }
+        .info-banner {
+            background: #fffbea; border: 1px solid #f9d338;
+            border-radius: 12px; padding: 12px 16px;
+            font-size: 13.5px; font-weight: 600; color: #7a6200;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        /* ── TWO-BOX LAYOUT ── */
+        .twobox {
+            display: flex; gap: 16px; align-items: flex-start;
+        }
+
+        /* ── STUDENT CARD LIST (Image 2 style) ── */
+        .listofstudents {
+            width: 340px;
+            flex-shrink: 0;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            overflow: hidden;
+            margin-left: 10px;
+        }
+
+        .list-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .list-header-icon {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: linear-gradient(135deg, #f9a825, #f9d338);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 15px; flex-shrink: 0;
+        }
+        .list-header h2 {
+            font-size: 14.5px; font-weight: 800; color: #132A3F;
+        }
+
+        /* Search inside the card list */
+        .list-toolbar {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .search-box {
+            display: flex; align-items: center; gap: 8px;
+            background: #f5f7fa; border-radius: 10px;
+            padding: 8px 12px; font-size: 13px;
+            color: #aab0ba; font-weight: 600; cursor: text;
+        }
+        .search-box i { color: #aab0ba; }
+
+        /* Student cards */
+        .student-cards { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 2px; }
+
+        .student-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 10px; border-radius: 12px;
+            cursor: pointer; transition: background 0.18s;
+            position: relative;
+        }
+        .student-card:hover { background: #f5f7fa; }
+        .student-card.active { background: #132A3F; }
+
+        .student-card-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #4db6e8, #2196c4);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 14px; flex-shrink: 0;
+        }
+
+        .student-card-info { flex: 1; min-width: 0; }
+        .student-card-name {
+            font-size: 13.5px; font-weight: 700; color: #4DB8B8;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .student-card-id {
+            font-size: 11.5px; color: #8a97a8; font-weight: 600; margin-top: 1px;
+            font-style: italic;
+        }
+
+        /* Status badge (pill) */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 11.5px; font-weight: 700; flex-shrink: 0;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+        }
+        .status-stable { background: #eafaf1; color: #1a9e57; }
+        .status-stable .status-dot { background: #22c55e; }
+        .status-attention { background: #fff4e5; color: #c97a00; }
+        .status-attention .status-dot { background: #f9a825; }
+
+        /* Radio circle (right side, like Image 2) */
+            .student-card-radio {
+                width: 18px; height: 18px; border-radius: 50%;
+                border: 2px solid #F9D338; flex-shrink: 0;
+                transition: border-color 0.18s, background 0.18s;
+                display: flex; align-items: center; justify-content: center;
+            }
+
+/* Center dot — hidden by default */
+.student-card-radio::after {
+    content: '';
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #132A3F;
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+/* Show dot on hover or active card */
+.student-card.active .student-card-radio {
+    border-color: transparent;
+    background: #F9D338;
+}
+
+.student-card.active .student-card-radio::after {
+    opacity: 1;
+    background: #132A3F;
+}
+
+
+        /* ── RIGHT PANEL ── */
+        .descriptionofstudent {
+            flex: 1;
+            background: white; border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            min-height: 650px;
+            display: flex; align-items: center; justify-content: center;
+            width: 880px;
+        }
+
+        .chat-empty-state { text-align: center; padding: 40px; }
+        .chat-empty-icon { font-size: 48px; color: #d1d5db; margin-bottom: 12px; }
+        .chat-empty-title { font-size: 16px; font-weight: 800; color: #6b7280; margin-bottom: 6px; }
+        .chat-empty-sub { font-size: 13px; color: #9ca3af; font-weight: 500; max-width: 240px; margin: 0 auto; }
+
+        

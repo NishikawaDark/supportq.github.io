@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!------------------CSS--------------------------->
+    <link rel="stylesheet" type = "text/css" href="navbar.css"> 
+    <link rel="stylesheet" type = "text/css" href="sidebar.css"> 
+    <link rel="stylesheet" type = "text/css" href="main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <!------------------CSS---------------------------> 
+    <title>Admin Interface</title>
+    <script>
+        // Security check
+        if (sessionStorage.getItem("userRole") !== "admin") {
+            window.location.href = "index.html";
+        }
+
+        // Logout function
+        function handleLogout() {
+            sessionStorage.clear(); 
+            window.location.href = "index.html";
+        }
+    </script>
+    <style>
+        body{
+            background-color: #F0F4F8;
+            min-height: 100vh;
+            margin-top: 130px;
+            margin-left:50px;
+            
+        }
+    </style>
+</head>
+
+
+
+ <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="brand">
+            <i class="fa-solid fa-brain"></i>
+            Support - Q
+        </div>
+        <ul>
+            <li><a href="#">Homepage</a></li>
+            <li><a href="#">Resources</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+        </ul>
+        <div class="nav-right">
+    <div class="nav-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        Search
+    </div>
+    <button class="nav-icon-btn">
+        <i class="fa-regular fa-envelope"></i>
+        <span class="badge">1</span>
+    </button>
+    <div class="nav-avatar" id="adminAvatar">AD</div>
+    <button class="nav-icon-btn" style="font-size:14px;">
+        <i class="fa-solid fa-chevron-down"></i>
+    </button>
+    <button class="nav-icon-btn" onclick="handleLogout()" title="Logout" style="color:#e53935;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+</div>
+    </nav>
+
+    <!-- PAGE WRAPPER -->
+    <div class="page-wrapper">
+
+        <!-- SIDEBAR -->
+        <div class="sidebarwrapper">
+            <div class="sidebar">
+                <button class="dashboard">
+                    <i class="fa-solid fa-house"></i> Dashboard
+                </button>
+                <button class="contact active">
+                    <i class="fa-solid fa-address-book"></i> Contact Students
+                </button>
+                <button class="assessments">
+                    <i class="fa-solid fa-file-lines"></i> Assessments
+                </button>
+                <button class="messages">
+                    <i class="fa-solid fa-envelope"></i> Messages
+                    <span style="margin-left:auto;margin-right:10px;background:#f9d338;color:#333;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">1</span>
+                </button>
+                <button class="resources">
+                    <i class="fa-solid fa-hands-holding-circle"></i> Resources
+                </button>
+                <hr class="divider">
+                <button class="shortcuts">
+                    <i class="fa-regular fa-star"></i> Shortcuts
+                </button>
+            </div>
+            <button class="feedback-btn">
+                <i class="fa-regular fa-star" style="color:#f9d338;"></i>
+                Feedback
+                <i class="fa-solid fa-chevron-down" style="font-size:11px;color:#aaa;"></i>
+            </button>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main">
+            <div class="breadcrumb">Dashboard / <span>Contact Students</span></div>
+
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="fa-regular fa-comment-dots"></i>
+                </div>
+                <h1>Contact Students</h1>
+            </div>
+
+            <div class="info-banner">
+                <i class="fa-regular fa-comment-dots"></i>
+                Select a student from the list to check in and offer support when needed.
+            </div>
+
+            <div class="twobox">
+                <!-- Student List -->
+                <div class="listofstudents">
+                    <div class="list-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i> Search
+                        </div>
+                        <button class="filter-btn">Alert Status <i class="fa-solid fa-caret-down"></i></button>
+                        <button class="filter-btn">All <i class="fa-solid fa-caret-down"></i></button>
+                    </div>
+
+                    <table class="student-table">
+
+                            <table class="student-table">
+    <thead>
+        <tr>
+            <th>Name <i class="fa-solid fa-caret-down" style="font-size:10px;"></i></th>
+            <th>ID Number</th>
+            <th>Alert Status</th>
+            <th>Last</th>
+        </tr>
+    </thead>
+    <tbody id="studentTableBody">
+        <!-- Students will load here -->
+    </tbody>
+</table>
+                    </table>
+
+
+            </div>
+        </div>
+
+    </div>
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+    const supabaseUrl = 'https://damkluawdvsthjjcpzgp.supabase.co'
+    const supabaseKey = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    async function loadStudents() {
+        const tbody = document.getElementById("studentTableBody");
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('role', 'student');
+
+        if (error) {
+            console.error("Error fetching students:", error.message);
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align:center; color:#aaa; padding:20px;">
+                        No students found.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        tbody.innerHTML = ""; // clear
+
+        data.forEach(student => {
+            // Get initials for avatar
+            const initials = student.name
+                ? student.name.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase()
+                : "?";
+
+            // Format date
+            const lastDate = student.created_at
+                ? new Date(student.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                : "—";
+
+            // Alert status — default "Stable" unless your DB has an alert_status column
+            const alertStatus = student.alert_status || "Stable";
+            const statusClass = alertStatus === "Stable" ? "status-stable" : "status-attention";
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>
+                    <div class="student-name">
+                        <div class="student-avatar">${initials}</div>
+                        ${student.name || "Unknown"}
+                    </div>
+                </td>
+                <td>${student.grade || "—"}</td>
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        <span class="status-dot"></span>
+                        ${alertStatus}
+                    </span>
+                </td>
+                <td>${lastDate}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    loadStudents();
+</script>
+</body>
+
+</html>

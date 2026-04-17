@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+  <html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Support-Q | Daily Assessment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link rel="stylesheet" href="3studentdashboard.css"/>
+    <link rel="stylesheet" href="3assessmentstudent.css"/>
+  </head>
+  <body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="nav-actions">
+        <div class="avatar-wrapper" id="avatarBtn" aria-haspopup="true" aria-expanded="false">
+          <div class="nav-avatar">
+            <span class="nav-avatar-initials" id="navInitials">S</span>
+            <img class="nav-avatar-photo" id="navAvatarPhoto" src="" alt=""/>
+          </div>
+          <i class="fa-solid fa-chevron-down avatar-chevron"></i>
+
+          <div class="dropdown-menu" id="dropdownMenu" role="menu">
+            <div class="dropdown-header">
+              <div class="dropdown-avatar">
+                <span class="nav-avatar-initials" id="dropInitials">S</span>
+                <img class="dropdown-avatar-photo" id="dropdownAvatarPhoto" src="" alt=""/>
+              </div>
+              <div>
+                <p class="dropdown-name" id="dropName">Student</p>
+                <p class="dropdown-role" id="dropSection">Section</p>
+              </div>
+            </div>
+            <hr class="dropdown-divider"/>
+            <label class="avatar-upload-label" for="avatarFileInput">
+              <i class="fa-solid fa-camera"></i> Set Profile Photo
+            </label>
+            <input type="file" id="avatarFileInput" accept="image/*"/>
+            <button class="dropdown-item" id="profileBtn"><i class="fa-regular fa-user"></i> My Profile</button>
+            <button class="dropdown-item" id="settingsBtn"><i class="fa-solid fa-gear"></i> Settings</button>
+            <hr class="dropdown-divider"/>
+            <div class="dropdown-item theme-row">
+              <span><i class="fa-solid fa-circle-half-stroke"></i> Dark Mode</span>
+              <label class="toggle-switch" aria-label="Toggle dark mode">
+                <input type="checkbox" id="themeToggle"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <hr class="dropdown-divider"/>
+            <button class="dropdown-item logout" id="dropdownLogout">
+              <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- PAGE WRAPPER -->
+    <div class="page-wrapper">
+
+      <!-- SIDEBAR -->
+      <div class="sidebarwrapper">
+        <div class="sidebar">
+          <div class="sidebar-brand">
+            <i class="fa-solid fa-brain"></i> Support - Q
+          </div>
+          <hr class="divider">
+          <button onclick="window.location.href='3studentdashboard.html'">
+            <i class="fa-solid fa-house"></i> Dashboard
+          </button>
+          <button onclick="window.location.href='3studentcontact.html'">
+            <i class="fa-solid fa-comments"></i> Contact Counselors
+          </button>
+          <button class="active" onclick="window.location.href='3assessmentstudent.html'">
+            <i class="fa-solid fa-file-lines"></i> Assessments
+          </button>
+          <button onclick="window.location.href='3studentresources.html'">
+            <i class="fa-solid fa-hands-holding-circle"></i> Resources
+          </button>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <main class="main-content">
+
+        <!-- ASSESSMENTS -->
+        <section id="section-assessments" class="content-section active">
+          <div class="breadcrumb">
+            <a href="3studentdashboard.html">Dashboard</a>
+            <span class="breadcrumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+            <span>Daily Check-in</span>
+          </div>
+          <div class="page-icon-wrapper">
+            <div class="page-icon" style="background:var(--teal);color:#fff;">
+              <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+          </div>
+
+          <div class="banner">
+            <i class="fa-solid fa-heart-pulse banner-icon"></i>
+            <p>Complete your daily wellness check-in. Your responses help counselors better support you.</p>
+          </div>
+
+          <div id="assessSubmittedBanner" class="assess-submitted-banner">
+            <i class="fa-solid fa-circle-check" style="color:#22c55e;font-size:1.1rem;flex-shrink:0;"></i>
+            You've already submitted a check-in for today! 🎉 Come back tomorrow, or add an optional follow-up below.
+          </div>
+          <div id="assessSevenDay" class="assess-seven-day">
+            <strong>📅 7-Day Check-in Reminder</strong>
+            It's been about a week — feel free to add extra notes in the follow-up section.
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-header-icon" style="background:var(--teal);color:#fff;">
+                <i class="fa-solid fa-sliders"></i>
+              </span>
+              <h2>Wellness Ratings</h2>
+            </div>
+            <div class="assessment-card-body">
+              <form id="checkinForm">
+
+                <div class="assess-form-group">
+                  <label for="moodRating">Mood Rating <span id="moodRatingLabel" class="assess-rating-label"></span></label>
+                  <input type="range" id="moodRating" min="1" max="10" value="5"/>
+                </div>
+                <div class="assess-form-group">
+                  <label for="stressLevel">Stress Level <span id="stressLevelLabel" class="assess-rating-label"></span></label>
+                  <input type="range" id="stressLevel" min="1" max="10" value="5"/>
+                </div>
+                <div class="assess-form-group">
+                  <label for="sleepQuality">Sleep Quality <span id="sleepQualityLabel" class="assess-rating-label"></span></label>
+                  <input type="range" id="sleepQuality" min="1" max="10" value="5"/>
+                </div>
+                <div class="assess-form-group">
+                  <label for="academicPressure">Academic Pressure <span id="academicPressureLabel" class="assess-rating-label"></span></label>
+                  <input type="range" id="academicPressure" min="1" max="10" value="5"/>
+                </div>
+                <div class="assess-form-group">
+                  <label for="socialWellbeing">Social Wellbeing <span id="socialWellbeingLabel" class="assess-rating-label"></span></label>
+                  <input type="range" id="socialWellbeing" min="1" max="10" value="5"/>
+                </div>
+
+                <div class="assess-form-group">
+                  <label style="justify-content:flex-start;">Helpful Activities Today</label>
+                  <div id="activitiesGrid" class="activities-grid"></div>
+                </div>
+
+                <div class="assess-form-group" style="margin-top:0.5rem;">
+                  <label for="checkinNotes">
+                    Additional Notes
+                    <span style="color:var(--text-muted);font-weight:500;">(Optional)</span>
+                  </label>
+                  <textarea id="checkinNotes" rows="4" placeholder="Any other thoughts or observations about today..."></textarea>
+                </div>
+
+                <!-- YES / NO QUESTIONS -->
+                <div class="assess-section-header">Quick Yes / No Check</div>
+                <p class="assess-section-desc">Tap to answer — these help your counselor get a clearer picture of your day.</p>
+
+                <div class="yn-group">
+                  <label class="yn-label">Did you eat regular meals today?</label>
+                  <div class="yn-options">
+                    <button type="button" class="yn-btn yn-yes" data-yn="ate-yes">✓ Yes</button>
+                    <button type="button" class="yn-btn yn-no"  data-yn="ate-no">✗ No</button>
+                  </div>
+                </div>
+                <div class="yn-group">
+                  <label class="yn-label">Did you get at least 6 hours of sleep?</label>
+                  <div class="yn-options">
+                    <button type="button" class="yn-btn yn-yes" data-yn="sleep-yes">✓ Yes</button>
+                    <button type="button" class="yn-btn yn-no"  data-yn="sleep-no">✗ No</button>
+                  </div>
+                </div>
+                <div class="yn-group">
+                  <label class="yn-label">Did you feel safe today?</label>
+                  <div class="yn-options">
+                    <button type="button" class="yn-btn yn-yes" data-yn="safe-yes">✓ Yes</button>
+                    <button type="button" class="yn-btn yn-no"  data-yn="safe-no">✗ No</button>
+                  </div>
+                </div>
+                <div class="yn-group">
+                  <label class="yn-label">Did you connect with a friend or family member today?</label>
+                  <div class="yn-options">
+                    <button type="button" class="yn-btn yn-yes" data-yn="connect-yes">✓ Yes</button>
+                    <button type="button" class="yn-btn yn-no"  data-yn="connect-no">✗ No</button>
+                  </div>
+                </div>
+                <div class="yn-group">
+                  <label class="yn-label">Are you feeling overwhelmed right now?</label>
+                  <div class="yn-options">
+                    <button type="button" class="yn-btn yn-yes" data-yn="overwhelmed-yes">✓ Yes</button>
+                    <button type="button" class="yn-btn yn-no"  data-yn="overwhelmed-no">✗ No</button>
+                  </div>
+                </div>
+
+                <!-- THERAPIST FOLLOW-UP -->
+                <div class="assess-section-header">
+                  Therapist Follow-up
+                  <span style="font-weight:500;font-size:0.78rem;color:var(--text-muted);">(Optional)</span>
+                </div>
+                <p class="assess-section-desc">If you'd like to share more, answer any of the questions below.</p>
+
+                <div class="assess-form-group">
+                  <label for="therapistQ1">1. What felt the heaviest today?</label>
+                  <textarea id="therapistQ1" rows="3" placeholder="Write here if you'd like..."></textarea>
+                </div>
+                <div class="assess-form-group">
+                  <label for="therapistQ2">2. What helped you cope, even a little?</label>
+                  <textarea id="therapistQ2" rows="3" placeholder="Write here if you'd like..."></textarea>
+                </div>
+                <div class="assess-form-group">
+                  <label for="therapistQ3">3. Is there anything you want support with tomorrow?</label>
+                  <textarea id="therapistQ3" rows="3" placeholder="Write here if you'd like..."></textarea>
+                </div>
+                <p id="therapistMessage" class="assess-followup-msg"></p>
+
+                <div style="margin-top:1.2rem;">
+                  <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem;">
+                    <i class="fa-solid fa-circle-check"></i> Save Check-in
+                  </button>
+                </div>
+
+                <!-- EXTENDED ASSESSMENT -->
+                <!--<div class="extended-assess-row">
+                  <div class="extended-assess-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                  <div class="extended-assess-text">
+                    <strong>Extended Assessment</strong>
+                    <span>Optional — for a deeper look at your mental wellness. Takes about 3–5 min.</span>
+                  </div>
+                  <button type="button" class="btn-outline-teal" id="openExtendedBtn">
+                    <i class="fa-solid fa-arrow-right"></i> Take It
+                  </button>
+                </div> -->
+
+              </form>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+      <i class="fa-solid fa-circle-check"></i>
+      <span id="toastMsg">Saved!</span>
+    </div>
+    <script src="navbar-user.js" defer></script>
+    <script type="module" src="3assessmentstudent.js"></script>
+    <script src="npcbuddy.js" defer></script>
+    
+</body>
+  </html>

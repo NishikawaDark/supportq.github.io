@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="2admindashboardnavbar.css"/>
+  <link rel="stylesheet" href="2admindashboardsidebar.css"/>
+  <title>Admin Dashboard | Support-Q</title>
+  <script>
+    // Auth guard — must be synchronous so it runs before the page renders
+    (function(){
+      var uid  = sessionStorage.getItem('userId');
+      var role = sessionStorage.getItem('userRole');
+      if (!uid || role !== 'admin') {
+        sessionStorage.clear();
+        window.location.replace('index.html');
+      }
+    })();
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #F0F4F8; color: #1a1a2e; }
+
+    .main-content {
+      flex: 1; display: flex; flex-direction: column; gap: 20px;
+      padding: 28px 28px 40px;
+    }
+
+    /* ── BREADCRUMB ── */
+    .breadcrumb { font-size: 12px; color: #8a97a8; font-weight: 600; margin-bottom: 2px; }
+    .breadcrumb span { color: #132A3F; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+    .page-header-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #f9a825, #f9d338);
+      display: flex; align-items: center; justify-content: center;
+      color: #132A3F; font-size: 20px;
+    }
+    .page-header h1 { font-size: 22px; font-weight: 800; color: #132A3F; font-family: 'Quicksand', sans-serif; }
+    .page-header p  { font-size: 13px; color: #8a97a8; font-weight: 600; margin-top: 2px; }
+
+    /* ── STAT CARDS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .stat-card {
+      background: white; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .stat-card-label {
+      font-size: 11.5px; font-weight: 800; color: #8a97a8;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .stat-card-value { font-size: 28px; font-weight: 800; color: #132A3F; font-family: 'Quicksand', sans-serif; }
+    .stat-card-sub   { font-size: 12px; color: #aab0ba; font-weight: 600; }
+    .stat-card.danger .stat-card-value  { color: #ef4444; }
+    .stat-card.warning .stat-card-value { color: #f9a825; }
+    .stat-card.good .stat-card-value    { color: #22c55e; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 15px; font-weight: 800; color: #132A3F;
+      font-family: 'Quicksand', sans-serif;
+      margin-bottom: 2px;
+    }
+    .section-title-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── URGENT ALERT CARD ── */
+    .urgent-card {
+      background: white; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .urgent-card-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1.5px solid #f0f2f5;
+      background: #fff8f8;
+    }
+    .urgent-header-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: #fef2f2; border: 1.5px solid #fca5a5;
+      display: flex; align-items: center; justify-content: center;
+      color: #ef4444; font-size: 16px; flex-shrink: 0;
+    }
+    .urgent-card-header h2 { font-size: 14.5px; font-weight: 800; color: #132A3F; flex: 1; }
+    .urgent-badge {
+      background: #ef4444; color: white;
+      border-radius: 20px; padding: 2px 10px;
+      font-size: 11.5px; font-weight: 800;
+    }
+
+    .urgent-list { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    .urgent-student-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 14px; border-radius: 12px;
+      background: #fafbfc; border: 1.5px solid #f0f2f5;
+      cursor: pointer; transition: box-shadow 0.18s, border-color 0.18s;
+    }
+    .urgent-student-row:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); border-color: #fca5a5; }
+
+    .urgent-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, #ef4444, #f87171);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 800; font-size: 14px; flex-shrink: 0;
+      border: 2px solid #fca5a5;
+    }
+    .urgent-avatar.warning {
+      background: linear-gradient(135deg, #f9a825, #f9d338);
+      border-color: #fde68a; color: #132A3F;
+    }
+
+    .urgent-info { flex: 1; min-width: 0; }
+    .urgent-name { font-size: 13.5px; font-weight: 800; color: #132A3F; }
+    .urgent-meta { font-size: 11.5px; color: #8a97a8; font-weight: 600; margin-top: 2px; }
+
+    .urgent-scores {
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    }
+    .score-chip {
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 11px; font-weight: 800;
+    }
+    .score-chip.red    { background: #fef2f2; color: #dc2626; }
+    .score-chip.orange { background: #fff4e5; color: #c97a00; }
+    .score-chip.green  { background: #dcfce7; color: #16a34a; }
+
+    .urgent-action {
+      background: #ef4444; color: white;
+      border: none; border-radius: 8px;
+      padding: 7px 14px; font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: 'Nunito', sans-serif;
+      transition: background 0.18s; white-space: nowrap; flex-shrink: 0;
+    }
+    .urgent-action:hover { background: #dc2626; }
+    .urgent-action.secondary {
+      background: #f9a825; color: #132A3F;
+    }
+    .urgent-action.secondary:hover { background: #e6bf1a; }
+
+    /* ── RECENT CHECK-INS TABLE ── */
+    .table-card {
+      background: white; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .table-card-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px; border-bottom: 1.5px solid #f0f2f5;
+    }
+    .table-header-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, #f9a825, #f9d338);
+      display: flex; align-items: center; justify-content: center;
+      color: #132A3F; font-size: 15px; flex-shrink: 0;
+    }
+    .table-card-header h2 { font-size: 14.5px; font-weight: 800; color: #132A3F; flex: 1; }
+
+    .checkins-table { width: 100%; border-collapse: collapse; }
+    .checkins-table th {
+      font-size: 11px; font-weight: 800; color: #8a97a8;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 10px 16px; text-align: left;
+      background: #f8f9fb; border-bottom: 1.5px solid #f0f2f5;
+    }
+    .checkins-table td {
+      padding: 11px 16px; font-size: 13px; font-weight: 600;
+      color: #132A3F; border-bottom: 1px solid #f5f7fa;
+      vertical-align: middle;
+    }
+    .checkins-table tr:last-child td { border-bottom: none; }
+    .checkins-table tr:hover td { background: #fafbfc; }
+
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .score-bar {
+      width: 60px; height: 6px; border-radius: 999px;
+      background: #f0f2f5; overflow: hidden;
+    }
+    .score-bar-fill { height: 100%; border-radius: 999px; }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: #aab0ba; font-size: 13px; font-weight: 600;
+    }
+    .empty-state i { font-size: 2rem; display: block; margin-bottom: 10px; color: #d1d5db; }
+
+    .loading-row { text-align: center; padding: 30px; color: #aab0ba; font-size: 13px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="avatar-wrapper" id="avatarBtn">
+    <div class="nav-avatar">AD</div>
+    <i class="fa-solid fa-chevron-down avatar-chevron"></i>
+    <div class="dropdown-menu" id="dropdownMenu">
+      <div class="dropdown-header">
+        <div class="dropdown-avatar">AD</div>
+        <div>
+          <p class="dropdown-name" id="adminNameDisplay">Admin</p>
+          <p class="dropdown-role">Administrator</p>
+        </div>
+      </div>
+      <hr class="dropdown-divider"/>
+      <button class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</button>
+      <button class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</button>
+      <hr class="dropdown-divider"/>
+      <button class="dropdown-item logout" onclick="handleLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE WRAPPER -->
+<div class="page-wrapper">
+
+  <!-- SIDEBAR -->
+  <div class="sidebarwrapper">
+    <div class="sidebar">
+      <div class="sidebar-brand"><i class="fa-solid fa-brain"></i> Support - Q</div>
+      <hr class="divider"/>
+      <button class="active" onclick="window.location.href='2admindashboard.html'">
+        <i class="fa-solid fa-house"></i> Dashboard
+      </button>
+      <button onclick="window.location.href='2admincontact.html'">
+        <i class="fa-solid fa-address-book"></i> Contact Students
+      </button>
+      <button onclick="window.location.href='2adminassessments.html'">
+        <i class="fa-solid fa-file-lines"></i> Assessments
+      </button>
+      <button onclick="window.location.href='2adminresources.html'">
+        <i class="fa-solid fa-hands-holding-circle"></i> Resources
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <div>
+      <div class="breadcrumb">Support-Q &rsaquo; <span>Dashboard</span></div>
+      <div class="page-header">
+        <div class="page-header-icon"><i class="fa-solid fa-house"></i></div>
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p id="dateLabel">Today's overview</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card danger">
+        <div class="stat-card-label">🚨 Need Urgent Help</div>
+        <div class="stat-card-value" id="statUrgent">—</div>
+        <div class="stat-card-sub">Mood ≤ 4 or overwhelmed</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-card-label">⚠️ Needs Attention</div>
+        <div class="stat-card-value" id="statAttention">—</div>
+        <div class="stat-card-sub">Mood 5–6 or high stress</div>
+      </div>
+      <div class="stat-card good">
+        <div class="stat-card-label">✅ Stable</div>
+        <div class="stat-card-value" id="statStable">—</div>
+        <div class="stat-card-sub">Mood ≥ 7, low stress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">📋 Check-ins Today</div>
+        <div class="stat-card-value" id="statToday">—</div>
+        <div class="stat-card-sub">Submissions today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">👥 Total Students</div>
+        <div class="stat-card-value" id="statTotal">—</div>
+        <div class="stat-card-sub">Registered accounts</div>
+      </div>
+    </div>
+
+    <!-- URGENT HELP NEEDED -->
+    <div class="urgent-card">
+      <div class="urgent-card-header">
+        <div class="urgent-header-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h2>Students Who Need Fast Help</h2>
+        <span class="urgent-badge" id="urgentBadge">0</span>
+      </div>
+      <div class="urgent-list" id="urgentList">
+        <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+      </div>
+    </div>
+
+    <!-- RECENT CHECK-INS TABLE -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="table-header-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <h2>Recent Check-ins (All Students)</h2>
+      </div>
+      <table class="checkins-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Date</th>
+            <th>Mood</th>
+            <th>Stress</th>
+            <th>Sleep</th>
+            <th>Overwhelmed</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="recentTableBody">
+          <tr><td colspan="7" class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Dropdown
+  const avatarBtn    = document.getElementById('avatarBtn');
+  const dropdownMenu = document.getElementById('dropdownMenu');
+  avatarBtn.addEventListener('click', e => { e.stopPropagation(); avatarBtn.classList.toggle('open'); dropdownMenu.classList.toggle('show'); });
+  document.addEventListener('click', () => { avatarBtn.classList.remove('open'); dropdownMenu.classList.remove('show'); });
+  function handleLogout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+  const adminName = sessionStorage.getItem('userName');
+  if (adminName) document.getElementById('adminNameDisplay').textContent = adminName;
+
+  // Date label
+  document.getElementById('dateLabel').textContent = new Date().toLocaleDateString([], { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+</script>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  const supabase = createClient('https://damkluawdvsthjjcpzgp.supabase.co', 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6');
+
+  function initials(name) {
+    return (name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  }
+
+  function riskLevel(c) {
+    if (!c) return 'no-data';
+    if (c.mood_rating <= 4 || c.overwhelmed === 'yes' || c.felt_safe === 'no') return 'urgent';
+    if (c.mood_rating <= 6 || c.stress_level >= 7) return 'attention';
+    return 'stable';
+  }
+
+  function scoreColor(val, invert = false) {
+    if (val === null || val === undefined) return '#d1d5db';
+    const high = invert ? val <= 4 : val >= 7;
+    const low  = invert ? val >= 7 : val <= 4;
+    if (high) return '#22c55e';
+    if (low)  return '#ef4444';
+    return '#f9a825';
+  }
+
+  function scoreChip(label, val, invert = false) {
+    const color = invert
+      ? (val >= 7 ? 'red' : val >= 5 ? 'orange' : 'green')
+      : (val <= 4 ? 'red' : val <= 6 ? 'orange' : 'green');
+    return `<span class="score-chip ${color}">${label}: ${val}/10</span>`;
+  }
+
+  async function loadDashboard() {
+    // Load all students + their latest check-in
+    const [{ data: students }, { data: checkins }] = await Promise.all([
+      supabase.from('profiles').select('id, name, grade, strand, email').eq('role', 'student'),
+      supabase.from('checkins').select('*').order('submitted_at', { ascending: false }),
+    ]);
+
+    const allStudents = students || [];
+    const allCheckins = checkins || [];
+
+    // Map: student_id → latest checkin
+    const latestMap = {};
+    allCheckins.forEach(c => {
+      if (!latestMap[c.student_id]) latestMap[c.student_id] = c;
+    });
+
+    // Today's checkins
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCheckins = allCheckins.filter(c => c.submitted_at?.slice(0, 10) === today);
+
+    // Categorize
+    let urgent = 0, attention = 0, stable = 0;
+    const urgentStudents = [];
+
+    allStudents.forEach(s => {
+      const latest = latestMap[s.id];
+      const level  = riskLevel(latest);
+      if (level === 'urgent')    { urgent++;    urgentStudents.push({ student: s, checkin: latest, level: 'urgent' }); }
+      else if (level === 'attention') { attention++; urgentStudents.push({ student: s, checkin: latest, level: 'attention' }); }
+      else { stable++; }
+    });
+
+    // Sort: urgent first, then attention
+    urgentStudents.sort((a, b) => {
+      if (a.level === b.level) return (a.checkin?.mood_rating ?? 10) - (b.checkin?.mood_rating ?? 10);
+      return a.level === 'urgent' ? -1 : 1;
+    });
+
+    // Stat cards
+    document.getElementById('statUrgent').textContent    = urgent;
+    document.getElementById('statAttention').textContent = attention;
+    document.getElementById('statStable').textContent    = stable;
+    document.getElementById('statToday').textContent     = todayCheckins.length;
+    document.getElementById('statTotal').textContent     = allStudents.length;
+
+    // Urgent list
+    const urgentList  = document.getElementById('urgentList');
+    const urgentBadge = document.getElementById('urgentBadge');
+    urgentBadge.textContent = urgentStudents.length;
+
+    if (!urgentStudents.length) {
+      urgentList.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-check" style="color:#22c55e;"></i>No students flagged right now. Everyone looks okay!</div>`;
+    } else {
+      urgentList.innerHTML = '';
+      urgentStudents.slice(0, 10).forEach(({ student, checkin, level }) => {
+        const ini     = initials(student.name);
+        const isUrgent = level === 'urgent';
+        const row     = document.createElement('div');
+        row.className = 'urgent-student-row';
+
+        const chips = checkin ? [
+          scoreChip('Mood', checkin.mood_rating),
+          scoreChip('Stress', checkin.stress_level, true),
+          checkin.overwhelmed === 'yes' ? `<span class="score-chip red">Overwhelmed</span>` : '',
+          checkin.felt_safe   === 'no'  ? `<span class="score-chip red">Unsafe</span>`      : '',
+          checkin.slept_enough === 'no' ? `<span class="score-chip orange">Poor sleep</span>` : '',
+        ].filter(Boolean).join('') : '<span class="score-chip orange">No check-in yet</span>';
+
+        const lastDate = checkin
+          ? new Date(checkin.submitted_at).toLocaleDateString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+          : 'Never';
+
+        row.innerHTML = `
+          <div class="urgent-avatar ${isUrgent ? '' : 'warning'}">${ini}</div>
+          <div class="urgent-info">
+            <div class="urgent-name">${student.name || 'Unknown'}</div>
+            <div class="urgent-meta">${[student.grade, student.strand].filter(Boolean).join(' · ') || student.email || '—'} &nbsp;·&nbsp; Last check-in: ${lastDate}</div>
+            <div class="urgent-scores" style="margin-top:5px;">${chips}</div>
+          </div>
+          <button class="urgent-action ${isUrgent ? '' : 'secondary'}" data-id="${student.id}">
+            <i class="fa-solid fa-comment-dots"></i> Message
+          </button>
+        `;
+
+        row.querySelector('.urgent-action').addEventListener('click', () => {
+          sessionStorage.setItem('openChatStudentId', String(student.id));
+          window.location.href = '2admincontact.html';
+        });
+
+        urgentList.appendChild(row);
+      });
+    }
+
+    // Recent check-ins table — last 30 entries
+    const tbody     = document.getElementById('recentTableBody');
+    const studentMap = {};
+    allStudents.forEach(s => { studentMap[s.id] = s; });
+
+    const recent = allCheckins.slice(0, 30);
+    if (!recent.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fa-solid fa-inbox"></i>No check-ins yet.</td></tr>`;
+    } else {
+      tbody.innerHTML = '';
+      recent.forEach(c => {
+        const s     = studentMap[c.student_id] || {};
+        const level = riskLevel(c);
+        const statusColor = level === 'urgent' ? '#ef4444' : level === 'attention' ? '#f9a825' : '#22c55e';
+        const statusLabel = level === 'urgent' ? 'Urgent' : level === 'attention' ? 'Attention' : 'Stable';
+
+        const moodFillColor = scoreColor(c.mood_rating);
+        const moodPct       = ((c.mood_rating || 0) / 10) * 100;
+        const stressFillColor = scoreColor(c.stress_level, true);
+        const stressPct       = ((c.stress_level || 0) / 10) * 100;
+        const sleepFillColor  = scoreColor(c.sleep_quality);
+        const sleepPct        = ((c.sleep_quality || 0) / 10) * 100;
+
+        const dateStr = new Date(c.submitted_at).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' });
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div style="display:flex;align-items:center;gap:9px;">
+              <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4db6e8,#2196c4);
+                display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:11px;flex-shrink:0;">
+                ${initials(s.name)}
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:13px;">${s.name || '—'}</div>
+                <div style="font-size:11px;color:#8a97a8;">${s.grade || ''} ${s.strand ? '· '+s.strand : ''}</div>
+              </div>
+            </div>
+          </td>
+          <td style="color:#8a97a8;">${dateStr}</td>
+          <td>
+            <div class="score-bar-wrap">
+              <span style="font-weight:800;color:${moodFillColor};">${c.mood_rating ?? '—'}</span>
+              <div class="score-bar"><div class="score-bar-fill" style="width:${moodPct}%;background:${moodFillColor};"></div></div>
+            </div>
+          </td>
+          <td>
+            <div class="score-bar-wrap">
+              <span style="font-weight:800;color:${stressFillColor};">${c.stress_level ?? '—'}</span>
+              <div class="score-bar"><div class="score-bar-fill" style="width:${stressPct}%;background:${stressFillColor};"></div></div>
+            </div>
+          </td>
+          <td>
+            <div class="score-bar-wrap">
+              <span style="font-weight:800;color:${sleepFillColor};">${c.sleep_quality ?? '—'}</span>
+              <div class="score-bar"><div class="score-bar-fill" style="width:${sleepPct}%;background:${sleepFillColor};"></div></div>
+            </div>
+          </td>
+          <td>
+            <span style="font-weight:700;color:${c.overwhelmed === 'yes' ? '#ef4444' : '#22c55e'};">
+              ${c.overwhelmed === 'yes' ? '⚠️ Yes' : '✓ No'}
+            </span>
+          </td>
+          <td>
+            <span style="background:${statusColor}22;color:${statusColor};padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:800;">
+              ${statusLabel}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  loadDashboard();
+</script>
+
+  <script src="npcbuddy.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="2admindashboardmain.css">
+    <link rel="stylesheet" href="2admindashboardnavbar.css">
+    <link rel="stylesheet" href="2admindashboardsidebar.css">
+    <title>Admin Interface</title>
+    <script>
+      (function(){
+        var uid  = sessionStorage.getItem('userId');
+        var role = sessionStorage.getItem('userRole');
+        if (!uid || role !== 'admin') {
+          sessionStorage.clear();
+          window.location.replace('index.html');
+        }
+      })();
+    </script>
+
+    <style>
+        .main { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+        .breadcrumb { font-size: 12px; color: #8a97a8; font-weight: 600; }
+        .breadcrumb span { color: #132A3F; }
+
+        /* ── PAGE HEADER ── */
+        .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 28px 40px; }
+        .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+        .page-header-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, #f9a825, #f9d338);
+            display: flex; align-items: center; justify-content: center;
+            color: #132A3F; font-size: 20px;
+        }
+        .page-header h1 { font-size: 22px; font-weight: 800; color: #132A3F; font-family: 'Quicksand', sans-serif; }
+        .page-header p  { font-size: 13px; color: #8a97a8; font-weight: 600; margin-top: 2px; }
+
+        .twobox { display: flex; gap: 16px; align-items: flex-start; flex: 1; }
+
+        /* ── STUDENT CARD LIST ── */
+        .listofstudents {
+            width: 340px; flex-shrink: 0;
+            background: white; border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            overflow: hidden;
+        }
+        .list-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .list-header-icon {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: linear-gradient(135deg, #f9a825, #f9d338);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 15px; flex-shrink: 0;
+        }
+        .list-header h2 { font-size: 14.5px; font-weight: 800; color: #132A3F; }
+
+        .list-toolbar { padding: 10px 14px; border-bottom: 1px solid #f0f2f5; }
+        .search-box {
+            display: flex; align-items: center; gap: 8px;
+            background: #f5f7fa; border-radius: 10px;
+            padding: 8px 12px; font-size: 13px; color: #aab0ba; font-weight: 600;
+        }
+        .search-box input {
+            border: none; background: transparent; outline: none;
+            font-size: 13px; color: #132A3F; font-family: inherit; flex: 1;
+        }
+        .search-box input::placeholder { color: #aab0ba; }
+
+        .student-cards { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 2px; max-height: 600px; overflow-y: auto; }
+
+        .student-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px; border-radius: 12px;
+            cursor: pointer; transition: background 0.18s; position: relative;
+        }
+        .student-card:hover { background: #f5f7fa; }
+        .student-card.active { background: #132A3F; }
+
+        .student-card-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #4db6e8, #2196c4);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 14px; flex-shrink: 0;
+        }
+        .student-card-info { flex: 1; min-width: 0; }
+        .student-card-name {
+            font-size: 13.5px; font-weight: 700; color: #132A3F;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .student-card.active .student-card-name { color: #4DB8B8; }
+        .student-card-id { font-size: 11.5px; color: #8a97a8; font-weight: 600; margin-top: 1px; font-style: italic; }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700; flex-shrink: 0;
+        }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .status-stable { background: #eafaf1; color: #1a9e57; }
+        .status-stable .status-dot { background: #22c55e; }
+        .status-attention { background: #fff4e5; color: #c97a00; }
+        .status-attention .status-dot { background: #f9a825; }
+
+        .unread-badge {
+            background: #e53935; color: white; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 10px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+
+        /* ── RIGHT PANEL ── */
+        .descriptionofstudent {
+            flex: 1; background: white; border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            min-height: 650px; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .chat-empty-state {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 40px;
+        }
+        .chat-empty-icon { font-size: 48px; color: #d1d5db; margin-bottom: 12px; }
+        .chat-empty-title { font-size: 16px; font-weight: 800; color: #6b7280; margin-bottom: 6px; }
+        .chat-empty-sub { font-size: 13px; color: #9ca3af; font-weight: 500; max-width: 240px; margin: 0 auto; }
+
+        .chat-panel-inner { display: flex; flex-direction: column; width: 100%; height: 100%; flex: 1; }
+
+        .chat-panel-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px; border-bottom: 1px solid #f0f2f5; flex-shrink: 0;
+        }
+        .chat-panel-avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            background: linear-gradient(135deg, #4db6e8, #2196c4);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 13px; flex-shrink: 0;
+        }
+        .chat-panel-name { font-size: 15px; font-weight: 800; color: #132A3F; }
+        .chat-panel-status {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 600; color: #1a9e57; margin-top: 2px;
+        }
+        .chat-panel-status .status-dot { background: #22c55e; }
+
+        .chat-panel-body {
+            flex: 1; overflow-y: auto;
+            padding: 20px; display: flex; flex-direction: column; gap: 10px;
+            min-height: 300px;
+        }
+
+        .chat-msg { display: flex; flex-direction: column; max-width: 65%; }
+        .chat-msg.admin   { align-self: flex-end;   align-items: flex-end; }
+        .chat-msg.student { align-self: flex-start; align-items: flex-start; }
+
+        .chat-bubble-wrap { display: flex; align-items: center; gap: 6px; }
+        .chat-msg.admin   .chat-bubble-wrap { flex-direction: row-reverse; }
+        .chat-msg.student .chat-bubble-wrap { flex-direction: row; }
+
+        .chat-bubble { padding: 10px 14px; border-radius: 16px; font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+        .chat-msg.admin   .chat-bubble { background: #132A3F; color: white;   border-bottom-right-radius: 4px; }
+        .chat-msg.student .chat-bubble { background: #f0f2f5; color: #132A3F; border-bottom-left-radius: 4px; }
+        .chat-time { font-size: 11px; color: #aab0ba; font-weight: 500; margin-top: 4px; }
+
+        .delete-btn {
+            opacity: 0; transition: opacity 0.18s;
+            background: none; border: none; cursor: pointer;
+            color: #e53935; font-size: 13px; padding: 4px 6px;
+            border-radius: 6px; flex-shrink: 0;
+        }
+        .delete-btn:hover { background: #fdecea; }
+        .chat-msg:hover .delete-btn { opacity: 1; }
+
+        .chat-date-divider {
+            text-align: center; font-size: 11px; color: #aab0ba;
+            font-weight: 700; margin: 8px 0;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .chat-date-divider::before,
+        .chat-date-divider::after {
+            content: ''; flex: 1; height: 1px; background: #f0f2f5;
+        }
+
+        .chat-panel-footer {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 16px; border-top: 1px solid #f0f2f5; flex-shrink: 0;
+        }
+        .chat-panel-input {
+            flex: 1; border: 1.5px solid #e2e6ea; border-radius: 10px;
+            padding: 10px 14px; font-size: 13.5px; font-family: inherit;
+            color: #132A3F; outline: none; transition: border-color 0.18s;
+        }
+        .chat-panel-input:focus { border-color: #4db6e8; }
+        .chat-panel-send {
+            background: #4db6e8; color: white; border: none; border-radius: 10px;
+            padding: 10px 18px; font-size: 13.5px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; gap: 7px; transition: background 0.18s;
+        }
+        .chat-panel-send:hover { background: #2196c4; }
+
+        .chat-loading {
+            text-align: center; color: #aab0ba;
+            font-size: 13px; font-weight: 600; padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="avatar-wrapper" id="avatarBtn">
+        <div class="nav-avatar">AD</div>
+        <i class="fa-solid fa-chevron-down avatar-chevron"></i>
+        <div class="dropdown-menu" id="dropdownMenu">
+            <div class="dropdown-header">
+                <div class="dropdown-avatar">AD</div>
+                <div>
+                    <p class="dropdown-name" id="adminNameDisplay">Admin</p>
+                    <p class="dropdown-role">Administrator</p>
+                </div>
+            </div>
+            <hr class="dropdown-divider"/>
+            <button class="dropdown-item"><i class="fa-regular fa-user"></i> My Profile</button>
+            <button class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</button>
+            <hr class="dropdown-divider"/>
+            <button class="dropdown-item logout" onclick="handleLogout()">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- PAGE WRAPPER -->
+<div class="page-wrapper">
+
+    <!-- SIDEBAR -->
+    <div class="sidebarwrapper">
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-brain"></i> Support - Q
+            </div>
+            <hr class="divider">
+            <button onclick="window.location.href='2admindashboard.html'"><i class="fa-solid fa-house"></i> Dashboard</button>
+            <button class="active"><i class="fa-solid fa-address-book"></i> Contact Students</button>
+            <button onclick="window.location.href='2adminassessments.html'"><i class="fa-solid fa-file-lines"></i> Assessments</button>
+            <button onclick="window.location.href='2adminresources.html'"><i class="fa-solid fa-hands-holding-circle"></i> Resources</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+    <div>
+      <div class="breadcrumb">Support-Q &rsaquo; <span>Contact Students</span></div>
+      <div class="page-header">
+        <div class="page-header-icon"><i class="fa-solid fa-address-book"></i></div>
+        <div>
+          <h1>Contact Students</h1>
+          <p>Select a student to view their profile and send a message</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="twobox" style="align-items:stretch;">
+
+        <!-- Student Card List -->
+        <div class="listofstudents">
+            <div class="list-header">
+                <div class="list-header-icon">
+                    <i class="fa-solid fa-address-book"></i>
+                </div>
+                <h2>Select a Student</h2>
+            </div>
+            <div class="list-toolbar">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Search students…">
+                </div>
+            </div>
+            <div class="student-cards" id="studentCards">
+                <p class="chat-loading">Loading students…</p>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="descriptionofstudent" id="rightPanel">
+            <div class="chat-empty-state" id="chatEmptyState">
+                <div class="chat-empty-icon"><i class="fa-regular fa-comments"></i></div>
+                <p class="chat-empty-title">No student selected</p>
+                <p class="chat-empty-sub">Select a student from the list to view their profile and send a message.</p>
+            </div>
+
+            <div class="chat-panel-inner" id="chatPanelInner" style="display:none;">
+                <div class="chat-panel-header">
+                    <div class="chat-panel-avatar" id="chatPanelAvatar"></div>
+                    <div class="chat-panel-meta">
+                        <p class="chat-panel-name" id="chatPanelName"></p>
+                        <p class="chat-panel-status"><span class="status-dot"></span> <span id="chatPanelStatusText">Online</span></p>
+                    </div>
+                </div>
+                <div class="chat-panel-body" id="chatPanelBody">
+                    <p class="chat-loading">Loading messages…</p>
+                </div>
+                <div class="chat-panel-footer">
+                    <input class="chat-panel-input" id="chatPanelInput" type="text" placeholder="Type a message…" autocomplete="off"/>
+                    <button class="chat-panel-send" id="chatPanelSend">
+                        <i class="fa-solid fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div><!-- /.main-content -->
+</div><!-- /.page-wrapper -->
+
+<!-- Dropdown toggle -->
+<script>
+    const avatarBtn    = document.getElementById("avatarBtn");
+    const dropdownMenu = document.getElementById("dropdownMenu");
+
+    function toggleDropdown(open) {
+        const isOpen = open !== undefined ? open : !avatarBtn.classList.contains("open");
+        avatarBtn.classList.toggle("open", isOpen);
+        dropdownMenu.classList.toggle("show", isOpen);
+    }
+
+    avatarBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleDropdown(); });
+    document.addEventListener("click", () => toggleDropdown(false));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") toggleDropdown(false); });
+
+    function handleLogout() {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+    }
+
+    // Show admin name from session
+    const adminName = sessionStorage.getItem("userName");
+    if (adminName) document.getElementById("adminNameDisplay").textContent = adminName;
+</script>
+
+<!-- Main chat logic -->
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+    const supabaseUrl = 'https://damkluawdvsthjjcpzgp.supabase.co'
+    const supabaseKey = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Guard: admin only
+    // if (sessionStorage.getItem("userRole") !== "admin") window.location.href = "index.html";
+
+    const _rawAdminId = sessionStorage.getItem("userId");
+    let adminId = _rawAdminId !== null && _rawAdminId !== "" && !isNaN(Number(_rawAdminId))
+        ? Number(_rawAdminId)
+        : null;
+
+    console.log("[Admin] userId from session:", _rawAdminId, "→ parsed:", adminId);
+
+    // Fallback: if userId missing, re-fetch from DB using stored email
+    async function ensureAdminId() {
+        if (adminId) return true;
+        const storedEmail = sessionStorage.getItem("userEmail");
+        if (!storedEmail) return false;
+        const { data } = await supabase.from('profiles').select('id').eq('email', storedEmail).single();
+        if (data) {
+            adminId = data.id;
+            sessionStorage.setItem("userId", String(adminId));
+            console.log("[Admin] recovered userId from email:", adminId);
+            return true;
+        }
+        return false;
+    }
+
+    // DOM refs
+    const chatEmptyState  = document.getElementById("chatEmptyState");
+    const chatPanelInner  = document.getElementById("chatPanelInner");
+    const chatPanelAvatar = document.getElementById("chatPanelAvatar");
+    const chatPanelName   = document.getElementById("chatPanelName");
+    const chatPanelBody   = document.getElementById("chatPanelBody");
+    const chatPanelInput  = document.getElementById("chatPanelInput");
+    const chatPanelSend   = document.getElementById("chatPanelSend");
+    const searchInput     = document.getElementById("searchInput");
+
+    let activeStudent     = null;   // { id, name, initials }
+    let realtimeSub       = null;   // active subscription
+    let allStudents       = [];
+
+    /* ── UTILS ── */
+    function initials(name) {
+        if (!name) return "?";
+        return name.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
+    }
+
+    function formatTime(isoStr) {
+        return new Date(isoStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatDate(isoStr) {
+        const d = new Date(isoStr);
+        const today = new Date();
+        if (d.toDateString() === today.toDateString()) return "Today";
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+        return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    /* ── DELETE MESSAGE ── */
+    async function deleteMessage(msgId, msgEl) {
+        if (!confirm("Delete this message?")) return;
+        const { error } = await supabase.from('messages').delete().eq('id', msgId);
+        if (error) {
+            alert("Failed to delete: " + error.message);
+        } else {
+            msgEl.remove();
+        }
+    }
+
+    /* ── BUILD MESSAGE ELEMENT ── */
+    function buildMsgEl(msg) {
+        const isAdmin     = msg.sender === adminId;
+        const senderClass = isAdmin ? "admin" : "student";
+
+        const msgEl = document.createElement("div");
+        msgEl.className = `chat-msg ${senderClass}`;
+        msgEl.dataset.msgId = msg.id;
+
+        const deleteBtn = isAdmin
+            ? `<button class="delete-btn" title="Delete message"><i class="fa-solid fa-trash"></i></button>`
+            : "";
+
+        msgEl.innerHTML = `
+            <div class="chat-bubble-wrap">
+                <div class="chat-bubble">${escapeHtml(msg.files)}</div>
+                ${deleteBtn}
+            </div>
+            <span class="chat-time">${formatTime(msg.date)}</span>
+        `;
+
+        if (isAdmin) {
+            msgEl.querySelector('.delete-btn').addEventListener('click', () => deleteMessage(msg.id, msgEl));
+        }
+
+        return msgEl;
+    }
+
+    /* ── RENDER MESSAGES ── */
+    function renderMessages(messages) {
+        chatPanelBody.innerHTML = "";
+        if (!messages || messages.length === 0) {
+            chatPanelBody.innerHTML = `<p class="chat-loading">No messages yet. Say hello!</p>`;
+            return;
+        }
+
+        let lastDate = null;
+        messages.forEach(msg => {
+            const msgDate = formatDate(msg.date);
+            if (msgDate !== lastDate) {
+                const divider = document.createElement("div");
+                divider.className = "chat-date-divider";
+                divider.textContent = msgDate;
+                chatPanelBody.appendChild(divider);
+                lastDate = msgDate;
+            }
+            chatPanelBody.appendChild(buildMsgEl(msg));
+        });
+
+        chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement("div");
+        d.appendChild(document.createTextNode(text || ""));
+        return d.innerHTML;
+    }
+
+    /* ── LOAD MESSAGES ── */
+    async function loadMessages(studentId) {
+        await ensureAdminId();
+
+        if (!adminId) {
+            chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Session error: userId not found (got: ${_rawAdminId}). Please <a href="index.html">log in again</a>.</p>`;
+            return;
+        }
+
+        chatPanelBody.innerHTML = `<p class="chat-loading">Loading messages…</p>`;
+
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender.eq.${adminId},receiver.eq.${studentId}),and(sender.eq.${studentId},receiver.eq.${adminId})`)
+            .order('date', { ascending: true });
+
+        if (error) {
+            chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Error loading messages.</p>`;
+            return;
+        }
+
+        renderMessages(data);
+
+        // Mark student's messages as seen
+        await supabase
+            .from('messages')
+            .update({ seen: 1 })
+            .eq('sender', studentId)
+            .eq('receiver', adminId)
+            .eq('seen', 0);
+
+        updateUnreadBadge(studentId, 0);
+    }
+
+    /* ── REALTIME SUBSCRIPTION ── */
+    function subscribeToMessages(studentId) {
+        if (realtimeSub) {
+            supabase.removeChannel(realtimeSub);
+            realtimeSub = null;
+        }
+
+        realtimeSub = supabase
+            .channel(`chat_admin_${adminId}_student_${studentId}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages'
+            }, payload => {
+                const msg = payload.new;
+                // Only handle messages relevant to this conversation
+                const isRelevant =
+                    (msg.sender === adminId   && msg.receiver === studentId) ||
+                    (msg.sender === studentId && msg.receiver === adminId);
+
+                if (!isRelevant) return;
+
+                // Add date divider if needed
+                const lastDivider = chatPanelBody.querySelector(".chat-date-divider:last-of-type");
+                const msgDate = formatDate(msg.date);
+                if (!lastDivider || lastDivider.textContent !== msgDate) {
+                    const divider = document.createElement("div");
+                    divider.className = "chat-date-divider";
+                    divider.textContent = msgDate;
+                    chatPanelBody.appendChild(divider);
+                }
+
+                chatPanelBody.appendChild(buildMsgEl(msg));
+                chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
+
+                // If student message, mark seen
+                if (!isAdmin) {
+                    supabase.from('messages').update({ seen: 1 }).eq('id', msg.id);
+                    updateUnreadBadge(studentId, 0);
+                }
+            })
+            .subscribe();
+    }
+
+    /* ── OPEN CHAT ── */
+    function openChatPanel(student) {
+        activeStudent = student;
+
+        chatPanelAvatar.textContent = student.initials;
+        chatPanelName.textContent   = student.name;
+        chatEmptyState.style.display  = "none";
+        chatPanelInner.style.display  = "flex";
+
+        loadMessages(student.id);
+        subscribeToMessages(student.id);
+
+        setTimeout(() => chatPanelInput.focus(), 150);
+    }
+
+    /* ── SEND MESSAGE ── */
+    async function sendMessage() {
+        const text = chatPanelInput.value.trim();
+        if (!text || !activeStudent) return;
+        await ensureAdminId();
+        if (!adminId) { alert("Session error: userId not found. Please log in again."); return; }
+
+        chatPanelInput.value = "";
+        chatPanelInput.disabled = true;
+        chatPanelSend.disabled  = true;
+
+        const { error } = await supabase.from('messages').insert([{
+            sender:   adminId,
+            receiver: activeStudent.id,
+            files:    text,
+            date:     new Date().toISOString(),
+            seen:     0
+        }]);
+
+        chatPanelInput.disabled = false;
+        chatPanelSend.disabled  = false;
+        chatPanelInput.focus();
+
+        if (error) alert("Failed to send: " + error.message);
+    }
+
+    chatPanelSend.addEventListener("click", sendMessage);
+    chatPanelInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+
+    /* ── UNREAD BADGE ── */
+    async function fetchUnreadCounts() {
+        if (!adminId) return {};
+        const { data } = await supabase
+            .from('messages')
+            .select('sender')
+            .eq('receiver', adminId)
+            .eq('seen', 0);
+
+        const counts = {};
+        (data || []).forEach(m => { counts[m.sender] = (counts[m.sender] || 0) + 1; });
+        return counts;
+    }
+
+    function updateUnreadBadge(studentId, count) {
+        const card = document.querySelector(`.student-card[data-id="${studentId}"]`);
+        if (!card) return;
+        let badge = card.querySelector(".unread-badge");
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement("div");
+                badge.className = "unread-badge";
+                card.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else {
+            if (badge) badge.remove();
+        }
+    }
+
+    /* ── LOAD STUDENTS ── */
+    async function loadStudents() {
+        const container = document.getElementById("studentCards");
+
+        const [{ data, error }, unreadCounts] = await Promise.all([
+            supabase.from('profiles').select('*').eq('role', 'student'),
+            fetchUnreadCounts()
+        ]);
+
+        if (error) {
+            container.innerHTML = `<p style="text-align:center;color:#e53935;padding:20px;font-size:13px;">Error loading students.</p>`;
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `<p style="text-align:center;color:#aaa;padding:20px;font-size:13px;">No students found.</p>`;
+            return;
+        }
+
+        allStudents = data;
+        renderStudentList(allStudents, unreadCounts);
+    }
+
+    function renderStudentList(students, unreadCounts = {}) {
+        const container = document.getElementById("studentCards");
+        container.innerHTML = "";
+
+        if (students.length === 0) {
+            container.innerHTML = `<p style="text-align:center;color:#aaa;padding:20px;font-size:13px;">No students found.</p>`;
+            return;
+        }
+
+        students.forEach(student => {
+            const ini         = initials(student.name);
+            const alertStatus = student.alert_status || "Stable";
+            const statusClass = alertStatus === "Stable" ? "status-stable" : "status-attention";
+            const unread      = unreadCounts[student.id] || 0;
+
+            const card = document.createElement("div");
+            card.className = "student-card";
+            card.dataset.id = student.id;
+            card.innerHTML = `
+                <div class="student-card-avatar">${ini}</div>
+                <div class="student-card-info">
+                    <div class="student-card-name">${student.name || "Unknown"}</div>
+                    <div class="student-card-id">${student.grade || "—"} ${student.strand ? "· " + student.strand : ""}</div>
+                </div>
+                <span class="status-badge ${statusClass}">
+                    <span class="status-dot"></span> ${alertStatus}
+                </span>
+                ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ""}
+            `;
+
+            card.addEventListener("click", () => {
+                document.querySelectorAll(".student-card").forEach(c => c.classList.remove("active"));
+                card.classList.add("active");
+                openChatPanel({ id: student.id, name: student.name || "Unknown", initials: ini });
+            });
+
+            container.appendChild(card);
+        });
+    }
+
+    /* ── SEARCH ── */
+    searchInput.addEventListener("input", () => {
+        const q = searchInput.value.toLowerCase().trim();
+        const filtered = allStudents.filter(s =>
+            (s.name  || "").toLowerCase().includes(q) ||
+            (s.grade || "").toLowerCase().includes(q) ||
+            (s.email || "").toLowerCase().includes(q)
+        );
+        renderStudentList(filtered);
+    });
+
+    /* ── REALTIME UNREAD (for sidebar badges while chatting) ── */
+    supabase.channel('admin_unread_watcher')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            const msg = payload.new;
+            // If it's a new message TO admin and NOT from the currently open chat
+            if (msg.receiver === adminId && (!activeStudent || msg.sender !== activeStudent.id)) {
+                const currentCount = parseInt(document.querySelector(`.student-card[data-id="${msg.sender}"] .unread-badge`)?.textContent || "0");
+                updateUnreadBadge(msg.sender, currentCount + 1);
+            }
+        })
+        .subscribe();
+
+    loadStudents().then(() => {
+        // Auto-open chat if navigated from assessments/dashboard "Message" button
+        const targetId = sessionStorage.getItem('openChatStudentId');
+        if (targetId) {
+            sessionStorage.removeItem('openChatStudentId');
+            const targetCard = document.querySelector(`.student-card[data-id="${targetId}"]`);
+            if (targetCard) targetCard.click();
+        }
+    });
+</script>
+
+
+  <script src="npcbuddy.js" defer></script>
+</body>
+</html>

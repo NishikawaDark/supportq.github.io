@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Q</title>
+    <link rel="stylesheet" href="1hompage.css">
+</head>
+
+<body>
+
+<script type="module">
+    
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+    const supabaseUrl = 'https://damkluawdvsthjjcpzgp.supabase.co'
+    const supabaseKey = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    window.closeAll = () => {
+        document.querySelectorAll(".modal").forEach(m => m.style.display = "none");
+    };
+
+    window.openStudentSignup = () => {
+        window.closeAll();
+        document.getElementById("studentSignup").style.display = "flex";
+    };
+    window.backTomodal = () => {
+        window.closeAll(); 
+        document.getElementById("loginModal").style.display = "flex"; 
+    };
+
+    
+    const loginBtn = document.getElementById("loginBtn");
+    const mainModal = document.getElementById("loginModal");
+    const sso = document.getElementById("sso");
+
+    loginBtn.onclick = () => mainModal.style.display = "flex";
+
+    document.querySelector(".student-btn").onclick = () => {
+        mainModal.style.display = "none";
+        document.getElementById("studentLogin").style.display = "flex";
+    };
+
+    document.querySelector(".admin-btn").onclick = () => {
+        mainModal.style.display = "none";
+        document.getElementById("adminLogin").style.display = "flex";
+    };
+
+    window.signupStudent = async function() {
+        const email = document.getElementById("sEmail").value;
+        const pass = document.getElementById("sPass").value;
+        const name = document.getElementById("sName").value;
+        const grade = document.getElementById("sGrade").value;
+        const strand = document.getElementById("sStrand").value;
+
+        const { error } = await supabase
+            .from('profiles')
+            .insert([{ email, password: pass, name, grade, strand, role: 'student' }]);
+
+        if (error) {
+            alert("Signup Error: " + error.message);
+        } else {
+            alert("Student account created in the cloud!");
+            window.closeAll();
+        }
+    };
+
+    window.loginStudent = async function() {
+        const emailInput = document.getElementById("studentLoginEmail").value;
+        const passInput = document.getElementById("studentLoginPass").value;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', emailInput)
+            .single();
+
+        if (data && data.password === passInput && data.role === 'student') {
+            alert("Student logged in!");
+            sessionStorage.setItem("userRole", "student");
+            sessionStorage.setItem("userName", data.name);
+            sessionStorage.setItem("userId", String(data.id));
+            sessionStorage.setItem("userEmail", data.email);
+            window.location.href = "3studentdashboard.html";
+        } else {
+            alert("Invalid credentials or account does not exist.");
+        }
+    };
+
+    window.loginAdmin = async function() {
+        const emailInput = document.getElementById("adminLoginEmail").value;
+        const passInput = document.getElementById("adminLoginPass").value;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', emailInput)
+            .single();
+
+        if (data && data.password === passInput && data.role === 'admin') {
+            alert("Admin logged in!");
+            sessionStorage.setItem("userRole", "admin");
+            sessionStorage.setItem("userName", data.name);
+            sessionStorage.setItem("userId", String(data.id));
+            sessionStorage.setItem("userEmail", data.email);
+            window.location.href = "2admindashboard.html";
+        } else {
+            alert("Invalid admin credentials.");
+        }
+    };
+</script>
+
+<nav class="navbar">
+    <div class="logo">
+        <img src="0zennestlogo.png" width="50px" height="50px" alt="Logo">
+        <h1 class="logo-text">Support - Q </h1>
+    </div>
+    <button id="loginBtn" class="login-btn">Log in</button>
+</nav>
+
+<section class="backgroundimage">
+    <section class="image-slideshow"></section>
+    <div class="backgroundimage-content">
+        <h1>Welcome to the Mental Health System check up!</h1>
+        <p>
+            A simple and reliable platform for mental health managing along with your account 
+            and accessing all system features in one place.
+        </p>
+    </div>
+</section>
+
+<section class="about">
+    <div class="about-inner">
+        <div class="about-header">
+            <span class="about-tag">Who We Are</span>
+            <h2>ABOUT US</h2>
+        </div>
+        <div class="about-body">
+            <div class="about-text">
+                <p>
+                    Our Mental Health System Check-Up is designed to support students in understanding and managing their emotional well-being. We provide a simple, accessible, and reliable platform where users can assess how they are feeling through guided questions and evaluations.
+                </p>
+                <p>
+                    This system helps identify common mental health concerns such as stress, anxiety, and depression. After completing an assessment, users receive personalized feedback along with practical suggestions to improve their well-being. These may include self-care tips, coping strategies, and recommendations to seek guidance from a counselor or mental health professional when needed.
+                <p>
+                    We aim to create a safe and supportive digital space where students can reflect on their mental health without fear of judgment. By promoting awareness and early detection, our platform encourages users to take proactive steps toward maintaining a healthy mind. Our goal is not only to provide assessments but also to empower individuals with knowledge, promote emotional resilience, and contribute to a healthier school community.
+            </div>
+            <div class="about-stats">
+                <div class="stat-item">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Confidential</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">Accessible</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="vm-cards">
+            <div class="vm-card vision-card">
+                <h3>Our Vision</h3>
+                <p>To build a future where every student feels heard, supported, and mentally healthy through accessible and reliable technological solutions.</p>
+            </div>
+            <div class="vm-card mission-card">
+                <h3>Our Mission</h3>
+                <p>To develop a reliable student mental health support system that helps schools monitor student's well-being, promote awareness and early intervention for mental health issues, and provide a safe platform for students to express their concerns.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="contact">
+    <h2>CONTACT US!</h2>
+    <p class="number"><img src="0number.png" class="contact-icon"> 09914314312</p>
+    <p class="email"><img src="0email.png" class="contact-icon"> Email: zennestcompany@gmail.com</p>
+    <p class="facebook"><img src="0facebook.png" class="contact-icon"> ZenNest</p>
+</section>
+
+<!-- Select Login Type Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeAll()">✖</button>
+        <h3>Select Login Type</h3>
+        <button class="student-btn">Student Log in</button>
+        <button class="admin-btn">Admin Log in</button>
+    </div>
+</div>
+
+<!-- Student Login Modal -->
+<div id="studentLogin" class="modal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeAll()">✖</button>
+        <h3>Student Login</h3>
+        <div class="modal-body">
+            <div class="input-group">
+                <input type="email" id="studentLoginEmail" placeholder="Email address">
+            </div>
+            <div class="input-group">
+                <input type="password" id="studentLoginPass" placeholder="Password">
+            </div>
+            <button class="modal-submit-btn" onclick="loginStudent()">Log In</button>
+            <button class="modal-signup-btn" onclick="openStudentSignup()">No account yet? Sign up</button>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Login Modal -->
+<div id="adminLogin" class="modal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeAll()">✖</button>
+        <h3>Admin Login</h3>
+        <div class="modal-body">
+            <div class="input-group">
+                <input type="email" id="adminLoginEmail" placeholder="Admin email">
+            </div>
+            <div class="input-group">
+                <input type="password" id="adminLoginPass" placeholder="Password">
+            </div>
+            <button class="modal-submit-btn admin-submit" onclick="loginAdmin()">Log In</button>
+            <button class="modal-back-btn" id="sso" onclick="backTomodal()">← Back to SSO</button>
+        </div>
+    </div>
+</div>
+
+<!-- Student Signup Modal -->
+<div id="studentSignup" class="modal">
+    <div class="modal-box modal-box-wide">
+        <button class="close-btn" onclick="closeAll()">✖</button>
+        <h3>Create Account</h3>
+        <div class="modal-body">
+            <div class="input-group">
+                <input type="text" id="sName" placeholder="Full Name">
+            </div>
+            <div class="signup-row">
+                <div class="input-group">
+                    <input type="text" id="sGrade" placeholder="Grade & Section">
+                </div>
+                <div class="input-group">
+                    <input type="text" id="sStrand" placeholder="Strand">
+                </div>
+            </div>
+            <div class="input-group">
+                <input type="email" id="sEmail" placeholder="Email address">
+            </div>
+            <div class="input-group">
+                <input type="password" id="sPass" placeholder="Create a password">
+            </div>
+            <button class="modal-submit-btn" onclick="signupStudent()">Create Account</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

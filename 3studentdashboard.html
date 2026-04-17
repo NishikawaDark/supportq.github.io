@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Support-Q | Student Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="3studentdashboard.css"/>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-actions">
+      <div class="avatar-wrapper" id="avatarBtn" aria-haspopup="true" aria-expanded="false">
+        <div class="nav-avatar">
+          <span class="nav-avatar-initials" id="navInitials">S</span>
+          <img class="nav-avatar-photo" id="navAvatarPhoto" src="" alt=""/>
+        </div>
+        <i class="fa-solid fa-chevron-down avatar-chevron"></i>
+
+        <div class="dropdown-menu" id="dropdownMenu" role="menu">
+          <div class="dropdown-header">
+            <div class="dropdown-avatar">
+              <span class="nav-avatar-initials" id="dropInitials">S</span>
+              <img class="dropdown-avatar-photo" id="dropdownAvatarPhoto" src="" alt=""/>
+            </div>
+            <div>
+              <p class="dropdown-name" id="dropName">Student</p>
+              <p class="dropdown-role" id="dropSection">Section</p>
+            </div>
+          </div>
+          <hr class="dropdown-divider"/>
+          <label class="avatar-upload-label" for="avatarFileInput">
+            <i class="fa-solid fa-camera"></i> Set Profile Photo
+          </label>
+          <input type="file" id="avatarFileInput" accept="image/*"/>
+          <button class="dropdown-item" id="profileBtn"><i class="fa-regular fa-user"></i> My Profile</button>
+          <button class="dropdown-item" id="settingsBtn"><i class="fa-solid fa-gear"></i> Settings</button>
+          <hr class="dropdown-divider"/>
+          <div class="dropdown-item theme-row">
+            <span><i class="fa-solid fa-circle-half-stroke"></i> Dark Mode</span>
+            <label class="toggle-switch" aria-label="Toggle dark mode">
+              <input type="checkbox" id="themeToggle"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <hr class="dropdown-divider"/>
+          <button class="dropdown-item logout" id="dropdownLogout">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE WRAPPER -->
+  <div class="page-wrapper">
+
+    <!-- SIDEBAR -->
+    <div class="sidebarwrapper">
+      <div class="sidebar">
+        <div class="sidebar-brand">
+          <i class="fa-solid fa-brain"></i> Support - Q
+        </div>
+        <hr class="divider">
+        <button data-tab="dashboard">
+          <i class="fa-solid fa-house"></i> Dashboard
+        </button>
+        <button data-tab="counselors">
+          <i class="fa-solid fa-comments"></i> Contact Counselors
+        </button>
+        <button data-tab="assessments">
+          <i class="fa-solid fa-file-lines"></i> Assessments
+        </button>
+        <button data-tab="resources">
+          <i class="fa-solid fa-hands-holding-circle"></i> Resources
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" style="flex:1;min-width:0;">
+
+      <!-- DASHBOARD SECTION -->
+      <section id="section-dashboard" class="content-section active">
+
+        <div class="dash-stats-row">
+          <div class="dash-stat-card">
+            <div class="stat-label">Weekly Check-In</div>
+            <div class="stat-value" id="dashTodayStatus">—</div>
+            <div class="stat-sub">Daily wellness</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="stat-label">Completion Rate</div>
+            <div class="stat-value" id="dashCompletionRate">0%</div>
+            <div class="stat-sub">Last 2 weeks</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="stat-label">Total Check-ins</div>
+            <div class="stat-value" id="dashTotalReports">0</div>
+            <div class="stat-sub">All time</div>
+          </div>
+        </div>
+
+        <div class="assessment-reminder-card">
+          <div class="reminder-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+          <div class="reminder-content">
+            <h3 id="reminderTitle">Daily Wellness Check-in</h3>
+            <p id="reminderDesc">You haven't submitted today's check-in yet. Take a moment to log how you're feeling.</p>
+          </div>
+          <button class="btn btn-primary" id="goToAssessBtn" style="flex-shrink:0;">
+            <i class="fa-solid fa-file-lines"></i> Go to Check-in
+          </button>
+        </div>
+
+        <!-- Check-in History -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <span class="card-header-icon" style="background:var(--teal);color:#fff;">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </span>
+            <h2>Check-in History</h2>
+          </div>
+          <div style="padding:1rem 1.2rem 1.2rem;">
+            <div id="historyList" style="display:flex;flex-direction:column;gap:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Unsubmitted Days -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-icon" style="background:#f9d338;color:#333;">
+              <i class="fa-solid fa-calendar-xmark"></i>
+            </span>
+            <h2>Unsubmitted Days <span style="font-size:0.75rem;font-weight:600;color:var(--text-muted);">(last 2 weeks)</span></h2>
+          </div>
+          <div style="padding:1rem 1.2rem 1.2rem;">
+            <div id="unsubmittedList" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMsg">Saved!</span>
+  </div>
+
+  <script src="navbar-user.js" defer></script>
+  <script type="module" src="3studentdashboard.js"></script>
+
+  <script src="npcbuddy.js" defer></script>
+</body>
+</html>
