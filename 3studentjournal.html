@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Support-Q | Journal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="3studentdashboard.css"/>
+  <link rel="stylesheet" href="3studentjournal.css"/>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-actions">
+      <div class="avatar-wrapper" id="avatarBtn" aria-haspopup="true" aria-expanded="false">
+        <div class="nav-avatar">
+          <span class="nav-avatar-initials" id="navInitials">S</span>
+          <img class="nav-avatar-photo" id="navAvatarPhoto" src="" alt=""/>
+        </div>
+        <i class="fa-solid fa-chevron-down avatar-chevron"></i>
+
+        <div class="dropdown-menu" id="dropdownMenu" role="menu">
+          <div class="dropdown-header">
+            <div class="dropdown-avatar">
+              <span class="nav-avatar-initials" id="dropInitials">S</span>
+              <img class="dropdown-avatar-photo" id="dropdownAvatarPhoto" src="" alt=""/>
+            </div>
+            <div>
+              <p class="dropdown-name" id="dropName">Student</p>
+              <p class="dropdown-role" id="dropSection">Section</p>
+            </div>
+          </div>
+          <hr class="dropdown-divider"/>
+          <label class="avatar-upload-label" for="avatarFileInput">
+            <i class="fa-solid fa-camera"></i> Set Profile Photo
+          </label>
+          <input type="file" id="avatarFileInput" accept="image/*"/>
+          <button class="dropdown-item" id="profileBtn"><i class="fa-regular fa-user"></i> My Profile</button>
+          <button class="dropdown-item" id="settingsBtn"><i class="fa-solid fa-gear"></i> Settings</button>
+          <hr class="dropdown-divider"/>
+          <div class="dropdown-item theme-row">
+            <span><i class="fa-solid fa-circle-half-stroke"></i> Dark Mode</span>
+            <label class="toggle-switch" aria-label="Toggle dark mode">
+              <input type="checkbox" id="themeToggle"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <hr class="dropdown-divider"/>
+          <button class="dropdown-item logout" id="dropdownLogout">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="sidebarwrapper">
+      <div class="sidebar">
+        <div class="sidebar-brand">
+          <i class="fa-solid fa-brain"></i> Support - Q
+        </div>
+        <hr class="divider">
+        <button onclick="window.location.href='3studentdashboard.html'">
+          <i class="fa-solid fa-house"></i> Dashboard
+        </button>
+        <button onclick="window.location.href='3studentcontact.html'">
+          <i class="fa-solid fa-comments"></i> Contact Counselors
+        </button>
+        <button onclick="window.location.href='3assessmentstudent.html'">
+          <i class="fa-solid fa-file-lines"></i> Assessments
+        </button>
+        <button onclick="window.location.href='3studentresources.html'">
+          <i class="fa-solid fa-hands-holding-circle"></i> Resources
+        </button>
+        <button class="active" onclick="window.location.href='3studentjournal.html'">
+          <i class="fa-solid fa-book-open"></i> Journal
+        </button>
+      </div>
+    </div>
+
+    <main class="main-content" style="flex:1;min-width:0;">
+      <section id="section-journal" class="content-section active">
+        <div class="breadcrumb">
+          <a href="3studentdashboard.html">Dashboard</a>
+          <span class="breadcrumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+          <span>Journal</span>
+        </div>
+
+        <div class="page-icon-wrapper">
+          <div class="page-icon" style="background:var(--teal);color:#fff;">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+        </div>
+
+        <div class="banner">
+          <i class="fa-solid fa-book-open banner-icon"></i>
+          <p>Write down your thoughts, reflections, and progress in a private journal space to support your mental wellbeing.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-header">
+            <span class="card-header-icon" style="background:var(--teal);color:#fff;">
+              <i class="fa-solid fa-pen-fancy"></i>
+            </span>
+            <h2>Daily Journal</h2>
+          </div>
+          <div class="assessment-card-body">
+            <div class="journal-action-row">
+              <button class="btn btn-secondary" id="newJournalBtn">
+                <i class="fa-solid fa-plus"></i> New Entry
+              </button>
+              <div class="journal-summary-row" style="margin:0;">
+                <span>Total entries: <strong>0</strong></span>
+                <span>Favorites: <strong>0</strong></span>
+              </div>
+            </div>
+            <div class="assess-form-group">
+              <label for="journalEntryTitle">Title</label>
+              <input id="journalEntryTitle" type="text" placeholder="Give your entry a title..." style="background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:10px;padding:0.75rem 0.9rem;color:var(--text-primary);width:100%;" />
+            </div>
+            <div class="assess-form-group">
+              <label for="journalEntryBody">Entry</label>
+              <textarea id="journalEntryBody" rows="10" placeholder="Write your thoughts, feelings, or reflections here..." style="width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:10px;padding:0.9rem;color:var(--text-primary);resize:vertical;"></textarea>
+            </div>
+            <div class="journal-controls">
+              <div class="journal-selectors">
+                <div class="mood-row">
+                  <div class="journal-chip active" data-type="mood" data-value="reflective">📝 Reflective</div>
+                  <div class="journal-chip" data-type="mood" data-value="hopeful">✨ Hopeful</div>
+                  <div class="journal-chip" data-type="mood" data-value="grateful">🙏 Grateful</div>
+                  <div class="journal-chip" data-type="mood" data-value="stressed">😓 Stressed</div>
+                </div>
+                <div class="tag-row">
+                  <div class="journal-chip active" data-type="tag" data-value="personal">Personal</div>
+                  <div class="journal-chip" data-type="tag" data-value="school">School</div>
+                  <div class="journal-chip" data-type="tag" data-value="goals">Goals</div>
+                  <div class="journal-chip" data-type="tag" data-value="feelings">Feelings</div>
+                </div>
+              </div>
+              <div class="journal-actions-row">
+                <button class="btn btn-secondary" id="favoriteBtn"><i class="far fa-star"></i> Favorite</button>
+                <button class="btn btn-danger" id="deleteJournalBtn"><i class="fa-solid fa-trash"></i> Delete</button>
+              </div>
+            </div>
+            <div class="assess-form-group" style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;">
+              <span id="journalWordCount" style="color:var(--text-muted);font-size:0.9rem;">0 words</span>
+              <button class="btn btn-primary" type="button" id="saveJournalBtn" style="padding:0.75rem 1.25rem;">
+                <i class="fa-solid fa-floppy-disk"></i> Save Entry
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-icon" style="background:#f9d338;color:#333;">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </span>
+            <h2>Recent Journal Notes</h2>
+          </div>
+          <div style="padding:1rem 1.2rem 1.2rem;">
+            <div class="journal-filter-row">
+              <input id="journalSearch" type="search" class="journal-search" placeholder="Search journal entries..." />
+              <button class="filter-chip active" data-filter="all">All</button>
+              <button class="filter-chip" data-filter="today">Today</button>
+              <button class="filter-chip" data-filter="week">This Week</button>
+              <button class="filter-chip" data-filter="favorites">Favorites</button>
+            </div>
+            <div class="journal-summary-row" style="margin:0;">
+              <span>Showing <strong id="journalSummaryTotal">0</strong> entries</span>
+              <span><strong id="journalSummaryFavorites">0</strong> favorites</span>
+            </div>
+            <div id="journalList" class="journal-list"></div>
+            <div id="journalEmptyMessage" class="journal-empty">No journal entries yet. Create a new one to get started.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMsg">Saved!</span>
+  </div>
+  <script src="navbar-user.js" defer></script>
+  <script src="3studentjournal.js" defer></script>
+  <script src="npcbuddy.js" defer></script>
+</body>
+</html>
