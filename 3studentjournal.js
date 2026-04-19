@@ -1,6 +1,13 @@
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://damkluawdvsthjjcpzgp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const JOURNAL_STORAGE_PREFIX = 'supportq_journal_';
-const studentJournalId = sessionStorage.getItem('userId') || 'guest';
-const JOURNAL_STORAGE_KEY = JOURNAL_STORAGE_PREFIX + studentJournalId;
+const studentJournalId = sessionStorage.getItem('userId');
+const isStudent = Boolean(studentJournalId);
+const JOURNAL_STORAGE_KEY = JOURNAL_STORAGE_PREFIX + (studentJournalId || 'guest');
 
 const journalEntryTitle = document.getElementById('journalEntryTitle');
 const journalEntryBody = document.getElementById('journalEntryBody');
@@ -25,14 +32,36 @@ let currentMood = 'reflective';
 let currentTag = 'personal';
 let activeFilter = 'all';
 
-function loadJournals() {
-  try {
-    const stored = localStorage.getItem(JOURNAL_STORAGE_KEY);
-    journals = stored ? JSON.parse(stored) : [];
-  } catch (err) {
-    journals = [];
-    console.warn('Failed to load journal entries.', err);
+async function loadJournals() {
+  if (!isStudent) {
+    try {
+      const stored = localStorage.getItem(JOURNAL_STORAGE_KEY);
+      journals = stored ? JSON.parse(stored) : [];
+    } catch (err) {
+      journals = [];
+      console.warn('Failed to load journal entries.', err);
+    }
+    return;
   }
+
+  const { data, error } = await supabase
+    .from('journals')
+    .select('*')
+    .eq('student_id', Number(studentJournalId))
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.warn('Supabase journal load failed:', error.message);
+    try {
+      const stored = localStorage.getItem(JOURNAL_STORAGE_KEY);
+      journals = stored ? JSON.parse(stored) : [];
+    } catch (err) {
+      journals = [];
+    }
+    return;
+  }
+
+  journals = data || [];
 }
 
 function saveJournals() {
@@ -63,6 +92,48 @@ function getWordCount(text) {
 function updateSummary() {
   journalSummaryTotal.textContent = journals.length;
   journalSummaryFavorites.textContent = journals.filter(entry => entry.favorite).length;
+}
+
+async function persistJournal(entry) {
+  if (!isStudent) {
+    saveJournals();
+    return;
+  }
+
+  const payload = {
+    student_id: Number(studentJournalId),
+    title: entry.title,
+    content: entry.content,
+    mood: entry.mood,
+    tag: entry.tag,
+    favorite: entry.favorite,
+    word_count: entry.wordCount,
+    updated_at: entry.updated_at,
+    date: entry.date,
+    time: entry.time
+  };
+
+  if (currentJournalId) {
+    const { error } = await supabase
+      .from('journals')
+      .update(payload)
+      .eq('id', entry.id)
+      .eq('student_id', Number(studentJournalId));
+
+    if (error) {
+      throw error;
+    }
+  } else {
+    const { error } = await supabase.from('journals').insert([
+      { id: entry.id, ...payload }
+    ]);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  saveJournals();
 }
 
 function getFilteredJournals() {
@@ -160,7 +231,7 @@ function getSelectedTag() {
   return active ? active.dataset.value : 'personal';
 }
 
-function saveJournal() {
+async function saveJournal() {
   const title = journalEntryTitle.value.trim();
   const content = journalEntryBody.value.trim();
   if (!title) {
@@ -193,17 +264,42 @@ function saveJournal() {
     currentJournalId = entry.id;
   }
 
-  saveJournals();
-  updateSummary();
-  renderJournalList();
-  showToast('Journal entry saved.');
+  try {
+    await persistJournal(entry);
+    if (!isStudent) {
+      saveJournals();
+    }
+    updateSummary();
+    renderJournalList();
+    showToast('Journal entry saved.');
+  } catch (error) {
+    console.error('Journal save failed:', error);
+    alert('Failed to save journal entry. Please try again.');
+  }
 }
 
-function deleteJournal() {
+async function deleteJournal() {
   if (!currentJournalId) return;
   if (!confirm('Delete this journal entry?')) return;
+
+  if (isStudent) {
+    const { error } = await supabase
+      .from('journals')
+      .delete()
+      .eq('id', currentJournalId)
+      .eq('student_id', Number(studentJournalId));
+
+    if (error) {
+      console.error('Journal delete failed:', error);
+      alert('Failed to delete journal entry. Please try again.');
+      return;
+    }
+  }
+
   journals = journals.filter(entry => entry.id !== currentJournalId);
-  saveJournals();
+  if (!isStudent) {
+    saveJournals();
+  }
   currentJournalId = null;
   resetEditor();
   updateSummary();
@@ -211,14 +307,20 @@ function deleteJournal() {
   showToast('Journal entry deleted.');
 }
 
-function toggleFavorite() {
+async function toggleFavorite() {
   currentFavorite = !currentFavorite;
   highlightActiveChips();
   if (currentJournalId) {
     const entry = journals.find(item => item.id === currentJournalId);
     if (entry) {
       entry.favorite = currentFavorite;
-      saveJournals();
+      try {
+        await persistJournal(entry);
+      } catch (error) {
+        console.error('Favorite toggle failed:', error);
+        alert('Failed to update favorite state.');
+        return;
+      }
       updateSummary();
       renderJournalList();
     }
@@ -262,8 +364,8 @@ function bindEvents() {
   });
 }
 
-function initJournal() {
-  loadJournals();
+async function initJournal() {
+  await loadJournals();
   resetEditor();
   updateSummary();
   bindEvents();
