@@ -2,6 +2,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://damkluawdvsthjjcpzgp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6';
+const SUPABASE_TABLE = 'journal';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const JOURNAL_STORAGE_PREFIX = 'supportq_journal_';
@@ -45,7 +46,7 @@ async function loadJournals() {
   }
 
   const { data, error } = await supabase
-    .from('journals')
+    .from(SUPABASE_TABLE)
     .select('*')
     .eq('student_id', Number(studentJournalId))
     .order('updated_at', { ascending: false });
@@ -115,7 +116,7 @@ async function persistJournal(entry) {
 
   if (currentJournalId) {
     const { error } = await supabase
-      .from('journals')
+      .from(SUPABASE_TABLE)
       .update(payload)
       .eq('id', entry.id)
       .eq('student_id', Number(studentJournalId));
@@ -124,12 +125,18 @@ async function persistJournal(entry) {
       throw error;
     }
   } else {
-    const { error } = await supabase.from('journals').insert([
-      { id: entry.id, ...payload }
-    ]);
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE)
+      .insert([payload])
+      .select('id');
 
     if (error) {
       throw error;
+    }
+
+    if (data && data.length) {
+      entry.id = data[0].id;
+      currentJournalId = entry.id;
     }
   }
 
@@ -242,7 +249,6 @@ async function saveJournal() {
 
   const now = new Date();
   const entry = {
-    id: currentJournalId || Date.now(),
     title,
     content,
     mood: getSelectedMood(),
@@ -255,17 +261,21 @@ async function saveJournal() {
   };
 
   if (currentJournalId) {
+    entry.id = currentJournalId;
     const existingIndex = journals.findIndex(item => item.id === currentJournalId);
     if (existingIndex !== -1) {
       journals[existingIndex] = { ...journals[existingIndex], ...entry };
     }
-  } else {
-    journals.unshift(entry);
-    currentJournalId = entry.id;
   }
 
   try {
     await persistJournal(entry);
+    if (!currentJournalId) {
+      if (entry.id != null) {
+        currentJournalId = entry.id;
+      }
+      journals.unshift(entry);
+    }
     if (!isStudent) {
       saveJournals();
     }
@@ -284,7 +294,7 @@ async function deleteJournal() {
 
   if (isStudent) {
     const { error } = await supabase
-      .from('journals')
+      .from(SUPABASE_TABLE)
       .delete()
       .eq('id', currentJournalId)
       .eq('student_id', Number(studentJournalId));
