@@ -484,7 +484,38 @@ function injectGameStyles() {
     .ga-mode-card-desc {
       font-size: 0.71rem; font-weight: 600;
       color: var(--text-muted, #8a97a8); line-height: 1.4;
+      margin-bottom: 6px;
+    }
+    .ga-mode-card-steps {
+      display: flex; flex-direction: column; gap: 3px;
       flex: 1;
+    }
+    .ga-mode-step {
+      display: flex; align-items: flex-start; gap: 5px;
+      font-size: 0.66rem; font-weight: 600;
+      color: var(--text-muted, #8a97a8); line-height: 1.4;
+    }
+    .ga-mode-step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--border, #e2e6ea);
+      color: var(--text-secondary, #5a6272);
+      font-size: 0.58rem; font-weight: 800; flex-shrink: 0; margin-top: 1px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .ga-mode-card:hover .ga-mode-step-num,
+    .ga-mode-card.selected .ga-mode-step-num {
+      background: rgba(77,184,184,0.18); color: var(--teal, #4db8b8);
+    }
+    .ga-mode-picker-sub strong { color: var(--text-secondary, #5a6272); }
+    .ga-mode-featured-steps-row {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+    }
+    .ga-mode-featured-step {
+      font-size: 0.67rem; font-weight: 700;
+      color: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.08);
+      border-radius: 6px; padding: 2px 7px;
     }
     .ga-mode-card-badge {
       display: inline-flex; align-items: center; gap: 4px;
@@ -632,26 +663,94 @@ function injectGameStyles() {
     .ga-card-body { padding: 1.2rem 1.3rem; }
 
     /* ── EMOJI PICKER ── */
+    .ga-emoji-section {
+      margin-bottom: 1.4rem;
+      background: var(--surface-alt, #f8f9fb);
+      border: 1.5px solid var(--border, #e2e6ea);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .ga-emoji-section:has(.ga-emoji-btn.selected) {
+      border-color: var(--teal, #4db8b8);
+    }
+    .ga-emoji-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem 0.6rem;
+      border-bottom: 1.5px solid var(--border, #e2e6ea);
+      background: var(--surface, #fff);
+    }
+    .ga-emoji-section-title {
+      font-size: 0.88rem; font-weight: 800;
+      color: var(--text-primary, #132A3F);
+      font-family: 'Quicksand', sans-serif;
+    }
+    .ga-emoji-section-sub {
+      font-size: 0.73rem; font-weight: 600;
+      color: var(--text-muted, #8a97a8);
+      margin-top: 2px;
+    }
+    .ga-emoji-selected-display {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface-alt, #f8f9fb);
+      border: 1.5px solid var(--border, #e2e6ea);
+      border-radius: 99px; padding: 3px 12px 3px 8px;
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--text-muted, #8a97a8);
+      transition: all 0.2s; flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .ga-emoji-selected-display.has-value {
+      background: rgba(77,184,184,0.1);
+      border-color: rgba(77,184,184,0.3);
+      color: var(--teal, #4db8b8);
+    }
+    .ga-emoji-selected-em { font-size: 1rem; line-height: 1; }
     .ga-emoji-row {
-      display: flex; gap: 10px; flex-wrap: wrap;
-      justify-content: center; margin: 0.5rem 0;
+      display: flex; gap: 0; flex-wrap: nowrap;
+      justify-content: stretch;
+      padding: 0.65rem 0.75rem;
+      gap: 6px;
     }
     .ga-emoji-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      background: var(--surface-alt,#f8f9fb);
-      border: 2px solid var(--border,#e2e6ea);
-      border-radius: 14px; padding: 12px 10px;
-      cursor: pointer; transition: all 0.2s; min-width: 62px;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      background: var(--surface, #fff);
+      border: 2px solid var(--border, #e2e6ea);
+      border-radius: 12px; padding: 10px 6px;
+      cursor: pointer; transition: all 0.2s;
       font-family: 'Nunito', sans-serif;
+      flex: 1; min-width: 0;
     }
-    .ga-emoji-btn .ga-em { font-size: 1.9rem; line-height:1; }
-    .ga-emoji-btn .ga-lbl { font-size: 0.68rem; font-weight: 700; color: var(--text-muted,#8a97a8); }
-    .ga-emoji-btn:hover { border-color: var(--teal,#4db8b8); transform: translateY(-3px) scale(1.05); box-shadow: 0 4px 14px rgba(77,184,184,0.2); }
-    .ga-emoji-btn.selected { border-color: var(--teal,#4db8b8); background: rgba(77,184,184,0.12); box-shadow: 0 4px 16px rgba(77,184,184,0.25); transform: translateY(-3px) scale(1.07); }
-    .ga-emoji-btn.selected .ga-lbl { color: var(--teal,#4db8b8); }
+    .ga-emoji-btn .ga-em { font-size: 1.75rem; line-height: 1; }
+    .ga-emoji-btn .ga-lbl {
+      font-size: 0.63rem; font-weight: 700;
+      color: var(--text-muted, #8a97a8);
+      text-align: center; line-height: 1.2;
+    }
+    .ga-emoji-btn:hover {
+      border-color: var(--teal, #4db8b8);
+      transform: translateY(-3px) scale(1.06);
+      box-shadow: 0 4px 14px rgba(77,184,184,0.2);
+      background: rgba(77,184,184,0.05);
+      z-index: 1;
+    }
+    .ga-emoji-btn.selected {
+      border-color: var(--teal, #4db8b8);
+      background: rgba(77,184,184,0.12);
+      box-shadow: 0 4px 16px rgba(77,184,184,0.25);
+      transform: translateY(-3px) scale(1.08);
+    }
+    .ga-emoji-btn.selected .ga-lbl { color: var(--teal, #4db8b8); font-weight: 800; }
+    .ga-emoji-btn.selected .ga-em  { filter: drop-shadow(0 2px 6px rgba(77,184,184,0.4)); }
 
     .ga-q-label { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary,#5a6272); margin-bottom: 0.65rem; display: block; }
     .ga-q-sub   { font-size: 0.75rem; color: var(--text-muted,#8a97a8); margin-bottom: 0.7rem; display: block; }
+
+    [data-theme="dark"] .ga-emoji-section { background: #1a2535; border-color: #2d3748; }
+    [data-theme="dark"] .ga-emoji-section-header { background: #1e2d3d; border-color: #2d3748; }
+    [data-theme="dark"] .ga-emoji-section-title { color: #e5e7eb; }
+    [data-theme="dark"] .ga-emoji-btn { background: #1e2d3d; border-color: #2d3748; }
+    [data-theme="dark"] .ga-emoji-selected-display { background: #1e2d3d; border-color: #2d3748; }
 
     .ga-chip-grid { display: flex; gap: 8px; flex-wrap: wrap; }
     .ga-chip {
@@ -845,12 +944,20 @@ function injectGameStyles() {
 // ── HELPERS ───────────────────────────────────────────────────
 function emojiPicker(items, answerKey, label, sub) {
   return `
-    <div style="margin-bottom:1.1rem;">
-      <span class="ga-q-label">${label}</span>
-      ${sub ? `<span class="ga-q-sub">${sub}</span>` : ''}
+    <div class="ga-emoji-section" data-section-key="${answerKey}">
+      <div class="ga-emoji-section-header">
+        <div>
+          <div class="ga-emoji-section-title">${label}</div>
+          ${sub ? `<div class="ga-emoji-section-sub">${sub}</div>` : '<div class="ga-emoji-section-sub">Tap the one that fits best</div>'}
+        </div>
+        <div class="ga-emoji-selected-display" id="sel-${answerKey}">
+          <span class="ga-emoji-selected-em">👆</span>
+          <span>Tap to answer</span>
+        </div>
+      </div>
       <div class="ga-emoji-row" data-key="${answerKey}">
         ${items.map(it => `
-          <button type="button" class="ga-emoji-btn" data-val="${it.value}" data-key="${answerKey}">
+          <button type="button" class="ga-emoji-btn" data-val="${it.value}" data-key="${answerKey}" data-emoji="${it.emoji}" data-lbl="${it.label}">
             <span class="ga-em">${it.emoji}</span>
             <span class="ga-lbl">${it.label}</span>
           </button>`).join('')}
@@ -864,6 +971,12 @@ function bindEmojiPicker(container, key) {
       container.querySelectorAll(`.ga-emoji-btn[data-key="${key}"]`).forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       answers[key] = Number(btn.dataset.val);
+      // Update the live selected display in the section header
+      const display = container.querySelector(`#sel-${key}`);
+      if (display) {
+        display.innerHTML = `<span class="ga-emoji-selected-em">${btn.dataset.emoji}</span><span>${btn.dataset.lbl}</span>`;
+        display.classList.add('has-value');
+      }
     });
   });
 }
@@ -915,62 +1028,96 @@ async function getWeeklyStreak() {
 
 // ── MODE DEFINITIONS ──────────────────────────────────────────
 const MODE_DEFS = [
-  { id: 0, label: 'Emoji Mode',   icon: '😊', desc: 'Pick emojis to express how you feel. Quick and visual.',        badge: '~3 min', badgeClass: 'badge-teal' },
-  { id: 1, label: 'Word Cloud',   icon: '🫧', desc: 'Tap feeling-words that match your week. Great if unsure.',      badge: '~4 min', badgeClass: 'badge-teal' },
-  { id: 2, label: 'Win Tracker',  icon: '🏆', desc: 'Check off small victories from this week. Every win counts!',  badge: '~3 min', badgeClass: 'badge-yellow' },
-  { id: 3, label: 'Story Mode',   icon: '📖', desc: 'Describe your week through short narrative prompts.',           badge: '~5 min', badgeClass: 'badge-yellow' },
-  { id: 4, label: 'Quick-fire',   icon: '⚡', desc: 'Fast gut-check answers. Ideal when you\'re short on time.',    badge: '~2 min', badgeClass: '' },
-  { id: 'light', label: 'Light Check-in', icon: '🌤️', desc: 'Just 3 questions. For harder days — showing up still counts.', badge: 'Tough week?', badgeClass: 'badge-red' },
+  { id: 0, label: 'Emoji Mode', icon: '😊',
+    desc: 'Rate your mood, sleep, stress and more by tapping emojis. The most popular way to check in.',
+    badge: '~3 min', badgeClass: 'badge-teal',
+    steps: ['Rate mood & stress with emojis', 'Rate sleep & social wellbeing', 'School pressure + Yes/No questions', 'Activities & notes'] },
+  { id: 1, label: 'Word Cloud', icon: '🫧',
+    desc: "Tap words that describe how your week felt. Good for when you can't quite explain it in numbers.",
+    badge: '~4 min', badgeClass: 'badge-teal',
+    steps: ['Tap feeling-words from a list', 'Rate stress, sleep & academics', 'Pick what helped you cope', 'Yes/No check + optional notes'] },
+  { id: 2, label: 'Win Tracker', icon: '🏆',
+    desc: "Tick off things you did this week — big or small. Great for days when you need a confidence boost.",
+    badge: '~3 min', badgeClass: 'badge-yellow',
+    steps: ['Check off your wins this week', 'Rate stress & sleep', 'Safety check + social rating', 'Open reflection questions'] },
+  { id: 3, label: 'Story Mode', icon: '📖',
+    desc: "Pick a sentence that describes your week, then fill in the details. Feels more like journaling.",
+    badge: '~5 min', badgeClass: 'badge-yellow',
+    steps: ['Pick a sentence for your week', 'Fill in sleep, school & social', 'Yes/No safety questions', 'Write a short reflection'] },
+  { id: 4, label: 'Quick-fire', icon: '⚡',
+    desc: "Answer fast — emoji taps and yes/no buttons only. Ideal when you're busy or just want it done.",
+    badge: '~2 min', badgeClass: '',
+    steps: ['Tap mood & stress emojis', 'Tap sleep, school & social emojis', 'Yes/No safety round', 'Optional activity tags'] },
+  { id: 'light', label: 'Light Check-in', icon: '🌤️',
+    desc: "Just 3 questions. Choose this on tough days — checking in at all is what matters.",
+    badge: 'Tough week?', badgeClass: 'badge-red',
+    steps: ['Mood emoji', 'Did you feel safe?', 'Optional free text'] },
 ];
 
 // ── MODE PICKER (full-space) ──────────────────────────────────
 function renderModePicker(container, weekInfo, onSelect) {
-  const { weekNumber, prevCheckin } = weekInfo; // weekNumber: 1 or 2
+  const { weekNumber, prevCheckin, isFirstEver } = weekInfo;
   const isWeek2 = weekNumber === 2;
   const regularModes = MODE_DEFS.filter(m => m.id !== 'light');
   const lightMode    = MODE_DEFS.find(m => m.id === 'light');
+
+  const weekBadge = isFirstEver ? `
+    <div class="ga-week-badge">
+      <div class="ga-week-badge-icon">👋</div>
+      <div class="ga-week-badge-text">
+        <div class="ga-week-badge-title">Welcome! This is your first check-in.</div>
+        <div class="ga-week-badge-sub">After this, check-ins reset every Monday. Pick any style below to get started.</div>
+      </div>
+      <div class="ga-week-badge-pill">🆕 First time</div>
+    </div>` : `
+    <div class="ga-week-badge">
+      <div class="ga-week-badge-icon">${isWeek2 ? '✅' : '📝'}</div>
+      <div class="ga-week-badge-text">
+        <div class="ga-week-badge-title">${isWeek2 ? 'Week 2 — Final Evaluation' : 'Week 1 — Check-in'}</div>
+        <div class="ga-week-badge-sub">${isWeek2
+          ? "This week's result combines with last week's for your 2-week wellness evaluation."
+          : 'Come back next Monday for Week 2 to get a full 2-week wellness picture.'
+        }</div>
+      </div>
+      <div class="ga-week-badge-pill ${isWeek2 ? 'week2' : ''}">${isWeek2 ? '🔔 Evaluation' : '📊 Week 1'}</div>
+    </div>`;
 
   container.innerHTML = `
     <div class="ga-mode-picker">
       <div class="ga-mode-picker-header">
         <div class="ga-mode-picker-eyebrow">📅 Weekly Assessment</div>
-        <div class="ga-mode-picker-title">How do you want to check in this week?</div>
-        <div class="ga-mode-picker-sub">Pick whatever feels right — your answers help your counselor support you.</div>
+        <div class="ga-mode-picker-title">Pick how you want to answer</div>
+        <div class="ga-mode-picker-sub">Each style asks the <strong>same questions</strong> — just in a different format. Choose whichever feels easiest for you right now.</div>
       </div>
 
-      <div class="ga-week-badge">
-        <div class="ga-week-badge-icon">${isWeek2 ? '✅' : '📝'}</div>
-        <div class="ga-week-badge-text">
-          <div class="ga-week-badge-title">${isWeek2 ? 'Week 2 — Final Evaluation' : 'Week 1 — First Check-in'}</div>
-          <div class="ga-week-badge-sub">${isWeek2
-            ? 'This week\'s result will be combined with last week\'s for your 2-week evaluation.'
-            : 'Complete again next Monday for a full 2-week wellbeing picture.'
-          }</div>
-        </div>
-        <div class="ga-week-badge-pill ${isWeek2 ? 'week2' : ''}">${isWeek2 ? '🔔 Evaluation' : '📊 Week 1'}</div>
-      </div>
+      ${weekBadge}
 
       <div>
-        <div class="ga-mode-section-label" style="margin-bottom:0.55rem;">Choose your style</div>
+        <div class="ga-mode-section-label" style="margin-bottom:0.7rem;">🎨 Choose your check-in style — tap any card to begin</div>
         <div class="ga-mode-grid">
           ${regularModes.map(m => `
             <button type="button" class="ga-mode-card" data-mode="${m.id}">
               <div class="ga-mode-card-icon">${m.icon}</div>
               <div class="ga-mode-card-name">${m.label}</div>
               <div class="ga-mode-card-desc">${m.desc}</div>
+              <div class="ga-mode-card-steps">
+                ${m.steps.map((s, i) => `<div class="ga-mode-step"><span class="ga-mode-step-num">${i+1}</span>${s}</div>`).join('')}
+              </div>
               <div class="ga-mode-card-badge ${m.badgeClass}">⏱ ${m.badge}</div>
             </button>`).join('')}
         </div>
       </div>
 
       <div>
-        <div class="ga-mode-section-label" style="margin-bottom:0.55rem;">Having a tough week?</div>
+        <div class="ga-mode-section-label" style="margin-bottom:0.6rem;">😓 Having a tough week? This one's for you</div>
         <button type="button" class="ga-mode-featured" data-mode="light">
           <div class="ga-mode-featured-icon">${lightMode.icon}</div>
           <div class="ga-mode-featured-content">
-            <div class="ga-mode-featured-name">${lightMode.label}</div>
+            <div class="ga-mode-featured-name">${lightMode.label} — only 3 questions</div>
             <div class="ga-mode-featured-desc">${lightMode.desc}</div>
-            <div class="ga-mode-featured-pill">💛 For tough weeks</div>
+            <div class="ga-mode-featured-steps-row">
+              ${lightMode.steps.map((s, i) => `<span class="ga-mode-featured-step">${i+1}. ${s}</span>`).join('')}
+            </div>
           </div>
           <div class="ga-mode-featured-arrow">→</div>
         </button>
@@ -1574,14 +1721,16 @@ async function renderAssessment(container) {
     return;
   }
 
-  // If not Monday, show locked screen (no submission yet this week)
-  if (!monday) {
+  // Check if this student has EVER submitted before
+  const lastTwo = await getLastTwoWeekSubmissions();
+  const hasEverSubmitted = lastTwo.length > 0;
+
+  // New users (never submitted) can answer any day for their first time.
+  // Returning users must wait for Monday.
+  if (!monday && hasEverSubmitted) {
     await renderNotMonday(container, null);
     return;
   }
-
-  // It's Monday and not yet submitted — determine week number
-  const lastTwo = await getLastTwoWeekSubmissions();
 
   // weekNumber: if there was a submission last week, this is week 2, else week 1
   let weekNumber = 1;
@@ -1595,7 +1744,8 @@ async function renderAssessment(container) {
   }
 
   const { streak, xp } = await getWeeklyStreak();
-  const weekInfo = { weekNumber, prevCheckin };
+  const isFirstEver = !hasEverSubmitted;
+  const weekInfo = { weekNumber, prevCheckin, isFirstEver };
 
   renderModePicker(container, weekInfo, (selectedMode) => {
     if (selectedMode === 'light') {

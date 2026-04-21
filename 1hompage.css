@@ -505,3 +505,71 @@ body{
     transition: border-color 0.2s, color 0.2s;
 }
 .modal-back-btn:hover { border-color: #5ba6b0; color: #1f6f8b; }
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — 1hompage.css
+══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .about-body { flex-direction: column; }
+  .about-stats { flex-direction: row; justify-content: center; gap: 24px; min-width: auto; width: 100%; }
+  .stat-divider { display: none; }
+  .vm-cards { gap: 16px; }
+}
+
+@media (max-width: 768px) {
+  .navbar { padding: 10px 16px; }
+  .logo-text { font-size: 16px; margin-left: 10px; }
+
+  .backgroundimage { height: 300px; }
+  .image-slideshow { height: 300px; }
+  .backgroundimage h1 { font-size: 20px; }
+  .backgroundimage p { font-size: 13px; }
+  .backgroundimage-content { max-width: 90%; padding: 0 16px; }
+
+  .about { padding: 40px 20px; }
+  .about h2 { font-size: 24px; }
+  .about-text p { font-size: 14px; }
+
+  .about-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .vm-cards { flex-direction: column; }
+  .vm-card { min-width: auto; }
+
+  .contact { height: auto; padding: 20px 20px 28px; }
+  .contact h2 { font-size: 20px; }
+
+  /* Modals */
+  .modal { padding: 16px; }
+  .modal-box { padding: 22px 18px; max-width: 95%; }
+  .modal-box-wide { max-width: 95%; }
+}
+
+@media (max-width: 480px) {
+  .navbar { padding: 8px 12px; }
+  .logo img { width: 36px; height: 36px; }
+  .logo-text { font-size: 14px; margin-left: 6px; }
+  .login-btn { padding: 7px 14px; font-size: 13px; }
+
+  .backgroundimage { height: 250px; }
+  .image-slideshow { height: 250px; }
+  .backgroundimage h1 { font-size: 17px; }
+  .backgroundimage p { font-size: 12px; }
+
+  .about { padding: 28px 14px; }
+  .about h2 { font-size: 20px; }
+
+  .signup-row { flex-direction: column; }
+
+  .modal-box h3 { font-size: 16px; }
+  .modal-submit-btn { padding: 10px; }
+  .student-btn, .admin-btn { padding: 9px; font-size: 13px; }
+
+  .contact { padding: 16px; }
+  .number, .email, .facebook { font-size: 13px; }
+}

@@ -148,3 +148,29 @@
         .chat-empty-sub { font-size: 13px; color: #9ca3af; font-weight: 500; max-width: 240px; margin: 0 auto; }
 
         
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — 2admindashboardmain.css
+══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .twobox { flex-direction: column; }
+  .listofstudents { width: 100%; margin-left: 0; }
+  .descriptionofstudent { width: 100%; min-height: 400px; }
+}
+
+@media (max-width: 768px) {
+  .twobox { flex-direction: column; gap: 14px; }
+  .listofstudents { width: 100%; margin-left: 0; }
+  .descriptionofstudent { width: 100%; min-height: 350px; }
+
+  .list-header { padding: 12px 14px 10px; }
+  .student-cards { padding: 6px 8px 8px; }
+  .student-card { padding: 9px 8px; }
+  .student-card-name { font-size: 12.5px; }
+  .student-card-id { font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+  .status-badge { padding: 2px 8px; font-size: 11px; }
+  .student-card-avatar { width: 34px; height: 34px; font-size: 12px; }
+}

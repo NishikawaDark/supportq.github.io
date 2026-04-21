@@ -859,11 +859,129 @@ body {
 }
 
 @media (max-width: 768px) {
-  .sidebarwrapper { display: none; }
+  .sidebarwrapper { transform: translateX(-100%); }
+  .sidebarwrapper.open { transform: translateX(0) !important; display: flex; }
   .page-wrapper { margin-left: 0; }
   .navbar { left: 0; width: 100%; }
 }
 
 @media (max-width: 480px) {
   .navbar { padding: 0 1rem; }
+}
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — 3studentcontact.css
+══════════════════════════════════════════════════════════════ */
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  transition: background 0.18s;
+  margin-right: auto;
+}
+.hamburger-btn:hover { background: var(--surface-alt); }
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1099;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.show { display: block; }
+
+/* Back button for mobile chat (hidden by default) */
+.chat-back-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--teal);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0 4px;
+  gap: 5px;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .sidebarwrapper { width: 200px; }
+  .navbar { left: 200px; width: calc(100% - 200px); }
+  .page-wrapper { margin-left: 200px; }
+  .two-col { grid-template-columns: 300px 1fr; }
+}
+
+@media (max-width: 900px) {
+  /* Stack the two-col into a single panel view */
+  .two-col {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 14px;
+  }
+  .counselor-card { height: auto; }
+  .chat-panel-card { min-height: 480px; }
+}
+
+@media (max-width: 768px) {
+  .sidebarwrapper {
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    width: 240px;
+  }
+  
+
+  .navbar {
+    left: 0; width: 100%;
+    padding: 0 14px;
+    justify-content: space-between;
+  }
+  .hamburger-btn { display: flex; align-items: center; }
+
+  .page-wrapper { margin-left: 0; }
+  .main-content { padding: 16px; }
+
+  .two-col { grid-template-columns: 1fr; }
+
+  /* On mobile: show only one panel at a time */
+  .two-col.chat-open .counselor-card { display: none; }
+  .two-col:not(.chat-open) .chat-panel-card { display: none; }
+
+  .chat-back-btn { display: inline-flex; }
+
+  .chat-panel-header { gap: 10px; }
+  .chat-msg { max-width: 80%; }
+}
+
+@media (max-width: 480px) {
+  .navbar { padding: 0 10px; }
+  .main-content { padding: 12px; }
+  .chat-panel-footer { padding: 10px 12px; gap: 8px; }
+  .chat-panel-send { padding: 9px 12px; }
+  .chat-panel-input { padding: 9px 10px; }
+  .chat-msg { max-width: 88%; }
+}
+
+/* ── SIDEBAR Z-INDEX FIX ── */
+.sidebarwrapper { z-index: 1100; }
+.sidebar-overlay { z-index: 1099; }
+@media (max-width: 768px) {
+  .sidebarwrapper {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    width: 240px;
+    z-index: 1100;
+  }
+  .sidebarwrapper.open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  }
 }

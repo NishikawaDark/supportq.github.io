@@ -268,5 +268,109 @@
   <script src="navbar-user.js" defer></script>
   <script type="module" src="3studentcontact.js"></script>
   <script src="npcbuddy.js" defer></script>
+<script>
+// Mobile chat panel navigation
+(function() {
+  function initMobileChat() {
+    var twoCol = document.querySelector('.two-col');
+    if (!twoCol) return;
+
+    // Intercept counselor clicks to switch to chat view on mobile
+    var counselorList = document.getElementById('counselorList');
+    if (counselorList) {
+      counselorList.addEventListener('click', function(e) {
+        var item = e.target.closest('.counselor-item');
+        if (item && window.innerWidth <= 768) {
+          setTimeout(function() {
+            twoCol.classList.add('chat-open');
+            var backBtn = document.getElementById('mobileChatBackBtn');
+            if (backBtn) backBtn.style.display = 'inline-flex';
+          }, 100);
+        }
+      });
+    }
+
+    // Insert back button into chat header when it appears
+    var observer = new MutationObserver(function() {
+      var header = document.querySelector('.chat-panel-header');
+      if (header && !document.getElementById('mobileChatBackBtn')) {
+        var backBtn = document.createElement('button');
+        backBtn.id = 'mobileChatBackBtn';
+        backBtn.style.cssText = 'display:none;background:none;border:none;cursor:pointer;color:#4db8b8;font-size:0.88rem;font-weight:700;gap:5px;align-items:center;padding:0 4px;flex-shrink:0;';
+        backBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i>';
+        header.prepend(backBtn);
+        backBtn.addEventListener('click', function() {
+          twoCol.classList.remove('chat-open');
+          backBtn.style.display = 'none';
+        });
+        if (window.innerWidth <= 768) backBtn.style.display = 'inline-flex';
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileChat);
+  } else {
+    initMobileChat();
+  }
+})();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var sidebar = document.querySelector('.sidebarwrapper');
+  if (!sidebar) return;
+
+  // Overlay
+  var overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+
+  // Hamburger button
+  var navbar = document.querySelector('.navbar');
+  var hamburger = null;
+  if (navbar) {
+    hamburger = document.createElement('button');
+    hamburger.className = 'hamburger-btn';
+    hamburger.setAttribute('aria-label', 'Toggle menu');
+    hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    navbar.prepend(hamburger);
+
+    hamburger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = sidebar.classList.toggle('open');
+      overlay.classList.toggle('show', isOpen);
+    });
+  }
+
+  // Close on overlay click
+  overlay.addEventListener('click', function() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  });
+
+  // Close on sidebar nav click (mobile)
+  sidebar.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, a');
+    if (btn && window.innerWidth <= 768) {
+      // small delay so navigation can begin first
+      setTimeout(function() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+      }, 80);
+    }
+  });
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) &&
+        hamburger && !hamburger.contains(e.target)) {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    }
+  });
+});
+</script>
 </body>
 </html>

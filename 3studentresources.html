@@ -253,5 +253,61 @@
   <script src="navbar-user.js" defer></script>
   <script src="3studentdashboard.js" defer></script>
   <script src="npcbuddy.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var sidebar = document.querySelector('.sidebarwrapper');
+  if (!sidebar) return;
+
+  // Overlay
+  var overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+
+  // Hamburger button
+  var navbar = document.querySelector('.navbar');
+  var hamburger = null;
+  if (navbar) {
+    hamburger = document.createElement('button');
+    hamburger.className = 'hamburger-btn';
+    hamburger.setAttribute('aria-label', 'Toggle menu');
+    hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    navbar.prepend(hamburger);
+
+    hamburger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = sidebar.classList.toggle('open');
+      overlay.classList.toggle('show', isOpen);
+    });
+  }
+
+  // Close on overlay click
+  overlay.addEventListener('click', function() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  });
+
+  // Close on sidebar nav click (mobile)
+  sidebar.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, a');
+    if (btn && window.innerWidth <= 768) {
+      // small delay so navigation can begin first
+      setTimeout(function() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+      }, 80);
+    }
+  });
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) &&
+        hamburger && !hamburger.contains(e.target)) {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    }
+  });
+});
+</script>
 </body>
 </html>

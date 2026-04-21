@@ -218,6 +218,55 @@
 
     loadStudents();
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var sidebar = document.querySelector('.sidebarwrapper');
+  if (!sidebar) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1099;backdrop-filter:blur(2px);';
+  document.body.appendChild(overlay);
+
+  var navbar = document.querySelector('.navbar');
+  var hamburger = null;
+  if (navbar) {
+    hamburger = document.createElement('button');
+    hamburger.className = 'admin-hamburger';
+    hamburger.setAttribute('aria-label', 'Toggle menu');
+    hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    hamburger.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1.2rem;color:#132A3F;padding:6px 8px;border-radius:8px;margin-right:auto;display:none;align-items:center;';
+    navbar.prepend(hamburger);
+
+    function checkSize() {
+      hamburger.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+    }
+    checkSize();
+    window.addEventListener('resize', checkSize);
+
+    hamburger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = sidebar.classList.toggle('open');
+      overlay.style.display = isOpen ? 'block' : 'none';
+    });
+  }
+
+  overlay.addEventListener('click', function() {
+    sidebar.classList.remove('open');
+    overlay.style.display = 'none';
+  });
+
+  document.addEventListener('click', function(e) {
+    if (sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) &&
+        hamburger && !hamburger.contains(e.target)) {
+      sidebar.classList.remove('open');
+      overlay.style.display = 'none';
+    }
+  });
+});
+</script>
 </body>
 
 </html>
