@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Support-Q | Daily Assessment</title>
+    <title>Support-Q | Weekly Assessment</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <link rel="stylesheet" href="3studentdashboard.css"/>
@@ -92,17 +92,17 @@
           <div class="breadcrumb">
             <a href="3studentdashboard.html">Dashboard</a>
             <span class="breadcrumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
-            <span>Daily Check-in</span>
+            <span>Weekly Assessment</span>
           </div>
           <div class="page-icon-wrapper">
             <div class="page-icon" style="background:var(--teal);color:#fff;">
-              <i class="fa-solid fa-heart-pulse"></i>
+              <i class="fa-solid fa-calendar-week"></i>
             </div>
           </div>
 
           <div class="banner">
-            <i class="fa-solid fa-heart-pulse banner-icon"></i>
-            <p>Complete your daily wellness check-in. Your responses help counselors better support you.</p>
+            <i class="fa-solid fa-calendar-week banner-icon"></i>
+            <p>Complete your <strong>weekly</strong> wellness check-in every Monday. Your responses over 2 weeks help counselors better understand and support you.</p>
           </div>
 
           <div id="assessSubmittedBanner" class="assess-submitted-banner">
@@ -114,132 +114,19 @@
             It's been about a week — feel free to add extra notes in the follow-up section.
           </div>
 
-          <div class="card">
+          <div class="card" style="min-height: calc(100vh - 340px);">
             <div class="card-header">
               <span class="card-header-icon" style="background:var(--teal);color:#fff;">
-                <i class="fa-solid fa-sliders"></i>
+                <i class="fa-solid fa-calendar-week"></i>
               </span>
-              <h2>Wellness Ratings</h2>
+              <h2>Weekly Check-in</h2>
             </div>
-            <div class="assessment-card-body">
-              <form id="checkinForm">
-
-                <div class="assess-form-group">
-                  <label for="moodRating">Mood Rating <span id="moodRatingLabel" class="assess-rating-label"></span></label>
-                  <input type="range" id="moodRating" min="1" max="10" value="5"/>
-                </div>
-                <div class="assess-form-group">
-                  <label for="stressLevel">Stress Level <span id="stressLevelLabel" class="assess-rating-label"></span></label>
-                  <input type="range" id="stressLevel" min="1" max="10" value="5"/>
-                </div>
-                <div class="assess-form-group">
-                  <label for="sleepQuality">Sleep Quality <span id="sleepQualityLabel" class="assess-rating-label"></span></label>
-                  <input type="range" id="sleepQuality" min="1" max="10" value="5"/>
-                </div>
-                <div class="assess-form-group">
-                  <label for="academicPressure">Academic Pressure <span id="academicPressureLabel" class="assess-rating-label"></span></label>
-                  <input type="range" id="academicPressure" min="1" max="10" value="5"/>
-                </div>
-                <div class="assess-form-group">
-                  <label for="socialWellbeing">Social Wellbeing <span id="socialWellbeingLabel" class="assess-rating-label"></span></label>
-                  <input type="range" id="socialWellbeing" min="1" max="10" value="5"/>
-                </div>
-
-                <div class="assess-form-group">
-                  <label style="justify-content:flex-start;">Helpful Activities Today</label>
-                  <div id="activitiesGrid" class="activities-grid"></div>
-                </div>
-
-                <div class="assess-form-group" style="margin-top:0.5rem;">
-                  <label for="checkinNotes">
-                    Additional Notes
-                    <span style="color:var(--text-muted);font-weight:500;">(Optional)</span>
-                  </label>
-                  <textarea id="checkinNotes" rows="4" placeholder="Any other thoughts or observations about today..."></textarea>
-                </div>
-
-                <!-- YES / NO QUESTIONS -->
-                <div class="assess-section-header">Quick Yes / No Check</div>
-                <p class="assess-section-desc">Tap to answer — these help your counselor get a clearer picture of your day.</p>
-
-                <div class="yn-group">
-                  <label class="yn-label">Did you eat regular meals today?</label>
-                  <div class="yn-options">
-                    <button type="button" class="yn-btn yn-yes" data-yn="ate-yes">✓ Yes</button>
-                    <button type="button" class="yn-btn yn-no"  data-yn="ate-no">✗ No</button>
-                  </div>
-                </div>
-                <div class="yn-group">
-                  <label class="yn-label">Did you get at least 6 hours of sleep?</label>
-                  <div class="yn-options">
-                    <button type="button" class="yn-btn yn-yes" data-yn="sleep-yes">✓ Yes</button>
-                    <button type="button" class="yn-btn yn-no"  data-yn="sleep-no">✗ No</button>
-                  </div>
-                </div>
-                <div class="yn-group">
-                  <label class="yn-label">Did you feel safe today?</label>
-                  <div class="yn-options">
-                    <button type="button" class="yn-btn yn-yes" data-yn="safe-yes">✓ Yes</button>
-                    <button type="button" class="yn-btn yn-no"  data-yn="safe-no">✗ No</button>
-                  </div>
-                </div>
-                <div class="yn-group">
-                  <label class="yn-label">Did you connect with a friend or family member today?</label>
-                  <div class="yn-options">
-                    <button type="button" class="yn-btn yn-yes" data-yn="connect-yes">✓ Yes</button>
-                    <button type="button" class="yn-btn yn-no"  data-yn="connect-no">✗ No</button>
-                  </div>
-                </div>
-                <div class="yn-group">
-                  <label class="yn-label">Are you feeling overwhelmed right now?</label>
-                  <div class="yn-options">
-                    <button type="button" class="yn-btn yn-yes" data-yn="overwhelmed-yes">✓ Yes</button>
-                    <button type="button" class="yn-btn yn-no"  data-yn="overwhelmed-no">✗ No</button>
-                  </div>
-                </div>
-
-                <!-- THERAPIST FOLLOW-UP -->
-                <div class="assess-section-header">
-                  Therapist Follow-up
-                  <span style="font-weight:500;font-size:0.78rem;color:var(--text-muted);">(Optional)</span>
-                </div>
-                <p class="assess-section-desc">If you'd like to share more, answer any of the questions below.</p>
-
-                <div class="assess-form-group">
-                  <label for="therapistQ1">1. What felt the heaviest today?</label>
-                  <textarea id="therapistQ1" rows="3" placeholder="Write here if you'd like..."></textarea>
-                </div>
-                <div class="assess-form-group">
-                  <label for="therapistQ2">2. What helped you cope, even a little?</label>
-                  <textarea id="therapistQ2" rows="3" placeholder="Write here if you'd like..."></textarea>
-                </div>
-                <div class="assess-form-group">
-                  <label for="therapistQ3">3. Is there anything you want support with tomorrow?</label>
-                  <textarea id="therapistQ3" rows="3" placeholder="Write here if you'd like..."></textarea>
-                </div>
-                <p id="therapistMessage" class="assess-followup-msg"></p>
-
-                <div style="margin-top:1.2rem;">
-                  <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem;">
-                    <i class="fa-solid fa-circle-check"></i> Save Check-in
-                  </button>
-                </div>
-
-                <!-- EXTENDED ASSESSMENT -->
-                <!--<div class="extended-assess-row">
-                  <div class="extended-assess-icon"><i class="fa-solid fa-clipboard-list"></i></div>
-                  <div class="extended-assess-text">
-                    <strong>Extended Assessment</strong>
-                    <span>Optional — for a deeper look at your mental wellness. Takes about 3–5 min.</span>
-                  </div>
-                  <button type="button" class="btn-outline-teal" id="openExtendedBtn">
-                    <i class="fa-solid fa-arrow-right"></i> Take It
-                  </button>
-                </div> -->
-
-              </form>
+            <div class="assessment-card-body" style="padding:1.2rem 1.3rem 1.5rem; display:flex; flex-direction:column;">
+              <form id="checkinForm" style="flex:1; display:flex; flex-direction:column;"></form>
             </div>
           </div>
+
+
         </section>
 
       </main>

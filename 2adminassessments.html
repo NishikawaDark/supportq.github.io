@@ -98,10 +98,10 @@
     }
     .s-card:hover { background: #f5f7fa; }
     .s-card.active { background: #132A3F; border-left-color: #f9d338; }
-    .s-card.urgent   { border-left-color: #ef4444; }
+    .s-card.urgent    { border-left-color: #ef4444; }
     .s-card.attention { border-left-color: #f9a825; }
-    .s-card.stable   { border-left-color: #22c55e; }
-    .s-card.active   { border-left-color: #f9d338 !important; }
+    .s-card.stable    { border-left-color: #22c55e; }
+    .s-card.active    { border-left-color: #f9d338 !important; }
 
     .s-avatar {
       width: 38px; height: 38px; border-radius: 50%;
@@ -123,11 +123,20 @@
     .s-meta { font-size: 11px; color: #8a97a8; font-weight: 600; margin-top: 1px; }
     .s-card.active .s-meta { color: rgba(255,255,255,0.6); }
 
-    .s-score {
-      font-size: 13px; font-weight: 800; flex-shrink: 0; text-align: right;
-    }
+    .s-score { font-size: 13px; font-weight: 800; flex-shrink: 0; text-align: right; }
     .s-score-sub { font-size: 10px; color: #aab0ba; font-weight: 600; }
     .s-card.active .s-score-sub { color: rgba(255,255,255,0.5); }
+
+    /* eval badge on list card */
+    .s-eval-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 7px; border-radius: 20px;
+      font-size: 10px; font-weight: 800; margin-top: 3px;
+      width: fit-content;
+    }
+    .s-eval-badge.urgent    { background: #fef2f2; color: #dc2626; }
+    .s-eval-badge.attention { background: #fff4e5; color: #c97a00; }
+    .s-eval-badge.stable    { background: #dcfce7; color: #16a34a; }
 
     /* ── DETAIL PANEL ── */
     .detail-panel {
@@ -146,8 +155,7 @@
     .detail-empty p { font-size: 14px; font-weight: 700; color: #9ca3af; }
     .detail-empty span { font-size: 12.5px; color: #d1d5db; font-weight: 600; }
 
-    /* Detail panel content */
-    .detail-content { flex: 1; overflow-y: auto; }
+    .detail-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
 
     .detail-header {
       display: flex; align-items: center; gap: 14px;
@@ -172,6 +180,34 @@
       transition: background 0.18s; flex-shrink: 0;
     }
     .detail-msg-btn:hover { background: #1e3d5c; }
+
+    /* ── TABS ── */
+    .detail-tabs {
+      display: flex; gap: 0;
+      border-bottom: 1.5px solid #f0f2f5;
+      padding: 0 22px;
+      background: white;
+      position: sticky; top: 90px; z-index: 4;
+    }
+    .detail-tab {
+      padding: 12px 18px; font-size: 13px; font-weight: 700;
+      color: #8a97a8; cursor: pointer; border: none; background: transparent;
+      border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+      font-family: 'Nunito', sans-serif; transition: color 0.18s, border-color 0.18s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .detail-tab:hover { color: #132A3F; }
+    .detail-tab.active { color: #132A3F; border-bottom-color: #f9a825; }
+    .detail-tab .tab-badge {
+      background: #ef4444; color: white;
+      border-radius: 20px; padding: 1px 7px;
+      font-size: 10px; font-weight: 800;
+    }
+    .detail-tab .tab-badge.green { background: #22c55e; }
+    .detail-tab .tab-badge.orange { background: #f9a825; color: #132A3F; }
+
+    .tab-panel { display: none; padding: 20px 22px; flex-direction: column; gap: 20px; }
+    .tab-panel.active { display: flex; }
 
     .detail-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 20px; }
 
@@ -230,6 +266,126 @@
     .empty-state { text-align: center; padding: 30px 20px; color: #aab0ba; font-size: 13px; font-weight: 600; }
     .empty-state i { font-size: 2rem; display: block; margin-bottom: 8px; color: #d1d5db; }
     .loading-msg { text-align:center; padding:30px; color:#aab0ba; font-size:13px; font-weight:600; }
+
+    /* ── 2-WEEK EVALUATION STYLES ── */
+    .eval-alert-banner {
+      border-radius: 14px; padding: 16px 18px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .eval-alert-banner.urgent   { background: #fef2f2; border: 1.5px solid #fca5a5; }
+    .eval-alert-banner.attention { background: #fff4e5; border: 1.5px solid #fde68a; }
+    .eval-alert-banner.stable   { background: #f0fdf4; border: 1.5px solid #bbf7d0; }
+    .eval-alert-icon {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .eval-alert-banner.urgent   .eval-alert-icon { background: #fee2e2; }
+    .eval-alert-banner.attention .eval-alert-icon { background: #fef3c7; }
+    .eval-alert-banner.stable   .eval-alert-icon { background: #dcfce7; }
+    .eval-alert-title { font-size: 14px; font-weight: 800; margin-bottom: 3px; }
+    .eval-alert-banner.urgent   .eval-alert-title { color: #991b1b; }
+    .eval-alert-banner.attention .eval-alert-title { color: #92400e; }
+    .eval-alert-banner.stable   .eval-alert-title { color: #14532d; }
+    .eval-alert-sub { font-size: 12.5px; font-weight: 600; line-height: 1.5; }
+    .eval-alert-banner.urgent   .eval-alert-sub { color: #7f1d1d; }
+    .eval-alert-banner.attention .eval-alert-sub { color: #78350f; }
+    .eval-alert-banner.stable   .eval-alert-sub { color: #166534; }
+
+    /* Avg metric tiles for eval */
+    .eval-metrics-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    }
+    .eval-metric-tile {
+      background: #f8f9fb; border-radius: 12px; padding: 12px 14px;
+      border: 1.5px solid #f0f2f5; text-align: center;
+    }
+    .eval-metric-label { font-size: 10.5px; font-weight: 800; color: #8a97a8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+    .eval-metric-value { font-size: 22px; font-weight: 800; font-family: 'Quicksand', sans-serif; }
+    .eval-metric-bar { height: 4px; border-radius: 999px; background: #e2e6ea; margin-top: 5px; overflow: hidden; }
+    .eval-metric-fill { height: 100%; border-radius: 999px; }
+
+    /* Trend chips */
+    .eval-trends-row {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .trend-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 800;
+    }
+    .trend-chip.up    { background: #dcfce7; color: #16a34a; }
+    .trend-chip.down  { background: #fef2f2; color: #dc2626; }
+    .trend-chip.flat  { background: #f3f4f6; color: #6b7280; }
+    .trend-chip.up-bad   { background: #fef2f2; color: #dc2626; } /* stress up = bad */
+    .trend-chip.down-good { background: #dcfce7; color: #16a34a; } /* stress down = good */
+
+    /* Week comparison side-by-side */
+    .week-compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .week-compare-card {
+      background: #f8f9fb; border-radius: 14px; padding: 16px;
+      border: 1.5px solid #f0f2f5;
+    }
+    .week-compare-title {
+      font-size: 11px; font-weight: 800; color: #8a97a8;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .week-pill {
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 800;
+    }
+    .week-pill.w1 { background: #ede9fe; color: #7c3aed; }
+    .week-pill.w2 { background: #dbeafe; color: #1d4ed8; }
+
+    .week-compare-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid #f0f2f5; font-size: 12.5px;
+    }
+    .week-compare-row:last-child { border-bottom: none; }
+    .week-compare-key { color: #5a6272; font-weight: 600; }
+    .week-compare-val { font-weight: 800; font-family: 'Quicksand', sans-serif; }
+
+    /* Crisis flags */
+    .crisis-flag-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      background: #fef2f2; border: 1.5px solid #fca5a5;
+      font-size: 12.5px; font-weight: 700; color: #991b1b;
+    }
+    .crisis-flag-row i { color: #ef4444; flex-shrink: 0; }
+
+    .eval-date-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #f3f4f6; border-radius: 8px;
+      padding: 5px 12px; font-size: 11.5px; font-weight: 700; color: #6b7280;
+    }
+
+    .no-eval-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: 40px 20px; gap: 12px;
+    }
+    .no-eval-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #f8f9fb; border: 2px solid #e2e6ea;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .no-eval-title { font-size: 15px; font-weight: 800; color: #6b7280; }
+    .no-eval-sub { font-size: 12.5px; color: #aab0ba; font-weight: 600; max-width: 280px; line-height: 1.6; }
+
+    /* Eval history list */
+    .eval-history-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 11px;
+      background: #f8f9fb; border: 1.5px solid #f0f2f5;
+      cursor: pointer; transition: border-color 0.18s, background 0.18s;
+    }
+    .eval-history-item:hover { border-color: #cbd5e1; background: #f1f5f9; }
+    .eval-history-item.selected { border-color: #132A3F; background: #132A3F08; }
+    .eval-history-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -350,7 +506,9 @@
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
   const supabase = createClient('https://damkluawdvsthjjcpzgp.supabase.co', 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6');
 
-  let allData      = [];   // [{ student, checkin, level, score }]
+  let allData      = [];
+  let evalMap      = {};   // student_id → latest weekly_evaluation
+  let evalHistMap  = {};   // student_id → all weekly_evaluations[]
   let activeFilter = 'all';
   let activeId     = null;
 
@@ -366,7 +524,6 @@
     return 'stable';
   }
 
-  // Lower score = worse (for sorting)
   function riskScore(c) {
     if (!c) return 999;
     let score = (c.mood_rating || 5) * 2;
@@ -380,17 +537,14 @@
   function levelColor(level) {
     return level === 'urgent' ? '#ef4444' : level === 'attention' ? '#f9a825' : level === 'stable' ? '#22c55e' : '#9ca3af';
   }
-
   function levelLabel(level) {
     return level === 'urgent' ? '🚨 Urgent' : level === 'attention' ? '⚠️ Attention' : level === 'stable' ? '✅ Stable' : 'No data';
   }
-
   function metricColor(val, invert = false) {
     if (val == null) return '#d1d5db';
     if (invert) return val >= 7 ? '#ef4444' : val >= 5 ? '#f9a825' : '#22c55e';
     return val >= 7 ? '#22c55e' : val >= 5 ? '#f9a825' : '#ef4444';
   }
-
   function ynIcon(val, trueVal = 'yes') {
     return val === trueVal
       ? '<i class="yn-icon fa-solid fa-circle-check" style="color:#22c55e;"></i>'
@@ -399,19 +553,52 @@
         : '<i class="yn-icon fa-solid fa-circle-minus" style="color:#d1d5db;"></i>';
   }
 
+  // Eval risk label from weekly_evaluations.risk_level
+  // JS stores: 'stable' | 'attention' | 'urgent'
+  function evalLevelColor(r) {
+    return r === 'urgent' ? '#ef4444' : r === 'attention' ? '#f9a825' : r === 'stable' ? '#22c55e' : '#9ca3af';
+  }
+  function evalLevelLabel(r) {
+    return r === 'urgent' ? '🚨 Needs Immediate Attention'
+         : r === 'attention' ? '⚠️ Needs Monitoring'
+         : r === 'stable' ? '✅ Stable'
+         : 'No evaluation yet';
+  }
+
+  function trendLabel(v) {
+    if (v == null) return '—';
+    return v > 0 ? `+${v} ↑` : v < 0 ? `${v} ↓` : '→ Same';
+  }
+  // For mood/sleep: up = good. For stress: up = bad.
+  function trendChipClass(v, invertBad = false) {
+    if (v == null || v === 0) return 'flat';
+    if (invertBad) return v > 0 ? 'up-bad' : 'down-good'; // stress
+    return v > 0 ? 'up' : 'down';
+  }
+  function trendArrow(v, invertBad = false) {
+    if (v == null || v === 0) return '→';
+    const positive = invertBad ? v < 0 : v > 0;
+    return positive ? '↑' : '↓';
+  }
+
   // ── LOAD DATA ──────────────────────────────────────────────
   async function loadData() {
-    const [{ data: students }, { data: checkins }] = await Promise.all([
+    const [
+      { data: students },
+      { data: checkins },
+      { data: evals },
+    ] = await Promise.all([
       supabase.from('profiles').select('*').eq('role', 'student'),
       supabase.from('checkins').select('*').order('submitted_at', { ascending: false }),
+      supabase.from('weekly_evaluations').select('*').order('evaluated_at', { ascending: false }),
     ]);
 
     const studentList = students || [];
     const checkinList = checkins || [];
+    const evalList    = evals    || [];
 
     // Latest checkin per student
-    const latestMap = {};
-    // All checkins per student
+    const latestMap  = {};
     const historyMap = {};
     checkinList.forEach(c => {
       if (!latestMap[c.student_id]) latestMap[c.student_id] = c;
@@ -419,17 +606,22 @@
       historyMap[c.student_id].push(c);
     });
 
+    // Latest eval + all evals per student
+    evalList.forEach(e => {
+      if (!evalMap[e.student_id])     evalMap[e.student_id]     = e;
+      if (!evalHistMap[e.student_id]) evalHistMap[e.student_id] = [];
+      evalHistMap[e.student_id].push(e);
+    });
+
     allData = studentList.map(s => ({
-      student:  s,
-      checkin:  latestMap[s.id] || null,
-      history:  historyMap[s.id] || [],
-      level:    riskLevel(latestMap[s.id]),
-      score:    riskScore(latestMap[s.id]),
+      student: s,
+      checkin: latestMap[s.id] || null,
+      history: historyMap[s.id] || [],
+      level:   riskLevel(latestMap[s.id]),
+      score:   riskScore(latestMap[s.id]),
     }));
 
-    // Sort: lowest score (worst) first
     allData.sort((a, b) => a.score - b.score);
-
     renderList();
   }
 
@@ -459,19 +651,30 @@
 
     container.innerHTML = '';
     filtered.forEach(({ student, checkin, level }) => {
-      const ini    = initials(student.name);
-      const mood   = checkin?.mood_rating ?? '—';
-      const color  = levelColor(level);
+      const ini      = initials(student.name);
+      const mood     = checkin?.mood_rating ?? '—';
+      const color    = levelColor(level);
       const isActive = student.id === activeId;
+      const evalEntry = evalMap[student.id];
 
       const card = document.createElement('div');
       card.className  = `s-card ${level} ${isActive ? 'active' : ''}`;
       card.dataset.id = student.id;
-      card.innerHTML  = `
+
+      // Show eval badge in list if exists
+      const evalBadgeHtml = evalEntry
+        ? `<div class="s-eval-badge ${evalEntry.risk_level}">
+             <i class="fa-solid fa-chart-line" style="font-size:9px;"></i>
+             2-wk: ${evalEntry.risk_level === 'urgent' ? 'Urgent' : evalEntry.risk_level === 'attention' ? 'Attention' : 'Stable'}
+           </div>`
+        : '';
+
+      card.innerHTML = `
         <div class="s-avatar ${level}">${ini}</div>
         <div class="s-info">
           <div class="s-name">${student.name || 'Unknown'}</div>
           <div class="s-meta">${[student.grade, student.strand].filter(Boolean).join(' · ') || student.email || '—'}</div>
+          ${evalBadgeHtml}
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div class="s-score" style="color:${isActive ? '#f9d338' : color};">${mood !== '—' ? mood + '/10' : '—'}</div>
@@ -481,7 +684,7 @@
 
       card.addEventListener('click', () => {
         activeId = student.id;
-        renderList(); // re-render to update active state
+        renderList();
         showDetail(student.id);
       });
 
@@ -497,31 +700,95 @@
     const { student, checkin, history, level } = entry;
     const ini   = initials(student.name);
     const color = levelColor(level);
+    const evalEntry = evalMap[studentId];
+    const evalHist  = evalHistMap[studentId] || [];
 
-    document.getElementById('detailEmpty').style.display   = 'none';
+    document.getElementById('detailEmpty').style.display = 'none';
     const content = document.getElementById('detailContent');
     content.style.display = 'flex';
     content.style.flexDirection = 'column';
 
-    if (!checkin) {
-      content.innerHTML = `
-        <div class="detail-header">
-          <div class="detail-avatar" style="background:linear-gradient(135deg,#9ca3af,#d1d5db);">${ini}</div>
-          <div>
-            <div class="detail-name">${student.name || 'Unknown'}</div>
-            <div class="detail-meta">${[student.grade, student.strand].filter(Boolean).join(' · ') || student.email || '—'}</div>
-          </div>
-          <span class="detail-status-badge" style="background:#f3f4f6;color:#6b7280;">No check-ins yet</span>
-          <button class="detail-msg-btn" onclick="goToChat(${student.id})"><i class="fa-solid fa-comment-dots"></i> Message</button>
-        </div>
-        <div class="detail-body">
-          <div class="empty-state"><i class="fa-solid fa-inbox"></i>This student hasn't submitted any check-ins yet.</div>
-        </div>
-      `;
-      return;
+    // ── Header ──
+    const submitDate = checkin
+      ? new Date(checkin.submitted_at).toLocaleString([], { month:'long', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
+      : null;
+
+    // ── Tab badge for eval ──
+    let evalTabBadge = '';
+    if (evalEntry) {
+      const bc = evalEntry.risk_level === 'urgent' ? '' : evalEntry.risk_level === 'attention' ? 'orange' : 'green';
+      evalTabBadge = `<span class="tab-badge ${bc}">${evalEntry.risk_level === 'urgent' ? '!' : evalEntry.risk_level === 'attention' ? '!' : '✓'}</span>`;
     }
 
-    // Build metrics
+    content.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-avatar" style="background:linear-gradient(135deg,${color},${color}99);">${ini}</div>
+        <div>
+          <div class="detail-name">${student.name || 'Unknown'}</div>
+          <div class="detail-meta">${[student.grade, student.strand].filter(Boolean).join(' · ') || student.email || '—'}${submitDate ? ' &nbsp;·&nbsp; Last check-in: ' + submitDate : ''}</div>
+        </div>
+        <span class="detail-status-badge" style="background:${color}22;color:${color};">${levelLabel(level)}</span>
+        <button class="detail-msg-btn" onclick="goToChat(${student.id})"><i class="fa-solid fa-comment-dots"></i> Message</button>
+      </div>
+
+      <div class="detail-tabs">
+        <button class="detail-tab active" data-tab="checkin">
+          <i class="fa-solid fa-clipboard-list"></i> Latest Check-in
+        </button>
+        <button class="detail-tab" data-tab="eval">
+          <i class="fa-solid fa-chart-line"></i> 2-Week Evaluation ${evalTabBadge}
+        </button>
+        <button class="detail-tab" data-tab="history">
+          <i class="fa-solid fa-clock-rotate-left"></i> History
+        </button>
+      </div>
+
+      <div id="tabCheckin" class="tab-panel active">
+        ${buildCheckinPanel(checkin, student)}
+      </div>
+
+      <div id="tabEval" class="tab-panel">
+        ${buildEvalPanel(evalEntry, evalHist, student)}
+      </div>
+
+      <div id="tabHistory" class="tab-panel">
+        ${buildHistoryPanel(history)}
+      </div>
+    `;
+
+    // Tab switching
+    content.querySelectorAll('.detail-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        content.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+        content.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        content.querySelector(`#tab${tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1)}`).classList.add('active');
+      });
+    });
+
+    // Eval history item click
+    content.querySelectorAll('.eval-history-item').forEach((item, i) => {
+      item.addEventListener('click', () => {
+        content.querySelectorAll('.eval-history-item').forEach(x => x.classList.remove('selected'));
+        item.classList.add('selected');
+        const ev = evalHist[i];
+        if (ev) {
+          content.querySelector('#evalDetailBlock').innerHTML = buildEvalDetail(ev);
+        }
+      });
+    });
+  }
+
+  // ── BUILD CHECK-IN PANEL ───────────────────────────────────
+  function buildCheckinPanel(checkin, student) {
+    if (!checkin) {
+      return `<div class="no-eval-state">
+        <div class="no-eval-icon">📭</div>
+        <div class="no-eval-title">No check-ins yet</div>
+        <div class="no-eval-sub">This student hasn't submitted any weekly check-ins.</div>
+      </div>`;
+    }
+
     const metrics = [
       { label: 'Mood',              val: checkin.mood_rating,       invert: false },
       { label: 'Stress',            val: checkin.stress_level,      invert: true  },
@@ -529,117 +796,224 @@
       { label: 'Academic Pressure', val: checkin.academic_pressure, invert: true  },
       { label: 'Social Wellbeing',  val: checkin.social_wellbeing,  invert: false },
     ];
-
     const metricsHtml = metrics.map(m => {
       const c   = metricColor(m.val, m.invert);
       const pct = ((m.val || 0) / 10) * 100;
-      return `
-        <div class="metric-tile">
-          <div class="metric-tile-label">${m.label}</div>
-          <div class="metric-tile-value" style="color:${c};">${m.val ?? '—'}<span style="font-size:13px;color:#aab0ba;">/10</span></div>
-          <div class="metric-tile-bar"><div class="metric-tile-fill" style="width:${pct}%;background:${c};"></div></div>
-        </div>
-      `;
+      return `<div class="metric-tile">
+        <div class="metric-tile-label">${m.label}</div>
+        <div class="metric-tile-value" style="color:${c};">${m.val ?? '—'}<span style="font-size:13px;color:#aab0ba;">/10</span></div>
+        <div class="metric-tile-bar"><div class="metric-tile-fill" style="width:${pct}%;background:${c};"></div></div>
+      </div>`;
     }).join('');
 
-    // Yes/No
-    const ynHtml = `
-      <div class="yn-grid">
-        <div class="yn-tile">${ynIcon(checkin.ate_meals)}Ate regular meals</div>
-        <div class="yn-tile">${ynIcon(checkin.slept_enough)}Got 6+ hours sleep</div>
-        <div class="yn-tile">${ynIcon(checkin.felt_safe)}Felt safe today</div>
-        <div class="yn-tile">${ynIcon(checkin.connected)}Connected with someone</div>
-        <div class="yn-tile">${ynIcon(checkin.overwhelmed, 'no')}Not overwhelmed</div>
-      </div>
-    `;
+    const ynHtml = `<div class="yn-grid">
+      <div class="yn-tile">${ynIcon(checkin.ate_meals)}Ate regular meals</div>
+      <div class="yn-tile">${ynIcon(checkin.slept_enough)}Got 6+ hours sleep</div>
+      <div class="yn-tile">${ynIcon(checkin.felt_safe)}Felt safe today</div>
+      <div class="yn-tile">${ynIcon(checkin.connected)}Connected with someone</div>
+      <div class="yn-tile">${ynIcon(checkin.overwhelmed, 'no')}Not overwhelmed</div>
+    </div>`;
 
-    // Activities
     const acts = (checkin.activities || '').split(',').map(a => a.trim()).filter(Boolean);
     const actsHtml = acts.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${acts.map(a => `<span style="background:#ede9fe;color:#7c3aed;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:700;">${a}</span>`).join('')}</div>`
       : `<span style="color:#aab0ba;font-size:13px;">None recorded</span>`;
 
-    // Therapist Qs
     const tqs = [
-      { q: 'What felt the heaviest today?',          a: checkin.therapist_q1 },
-      { q: 'What helped you cope, even a little?',   a: checkin.therapist_q2 },
-      { q: 'What support do you need tomorrow?',     a: checkin.therapist_q3 },
+      { q: 'What felt the heaviest today?',        a: checkin.therapist_q1 },
+      { q: 'What helped you cope, even a little?', a: checkin.therapist_q2 },
+      { q: 'What support do you need tomorrow?',   a: checkin.therapist_q3 },
     ].filter(t => t.a);
 
-    const tqHtml = tqs.length ? `
-      <div>
-        <div class="section-label">Therapist Follow-up Responses</div>
-        <div class="therapist-q">
-          ${tqs.map(t => `<div class="tq-item"><div class="tq-label">${t.q}</div><div class="tq-answer">"${t.a}"</div></div>`).join('')}
-        </div>
+    const tqHtml = tqs.length ? `<div>
+      <div class="section-label">Therapist Follow-up Responses</div>
+      <div class="therapist-q">
+        ${tqs.map(t => `<div class="tq-item"><div class="tq-label">${t.q}</div><div class="tq-answer">"${t.a}"</div></div>`).join('')}
       </div>
-    ` : '';
+    </div>` : '';
 
-    // Check-in history
-    const historyHtml = history.slice(0, 7).map((h, i) => {
-      const hl = riskLevel(h);
-      const hc = levelColor(hl);
-      const hDate = new Date(h.submitted_at).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' });
-      return `
-        <div class="history-item ${i === 0 ? 'selected' : ''}">
-          <div style="width:8px;height:8px;border-radius:50%;background:${hc};flex-shrink:0;"></div>
-          <span style="flex:1;font-size:13px;font-weight:600;color:#132A3F;">${hDate}</span>
-          <span style="font-weight:800;color:${metricColor(h.mood_rating)};">${h.mood_rating}/10</span>
-          <span style="font-size:11.5px;background:${hc}22;color:${hc};padding:2px 9px;border-radius:20px;font-weight:800;">${levelLabel(hl).replace(/[🚨⚠️✅]/g,'').trim()}</span>
+    const weekBadge = checkin.week_number
+      ? `<span style="background:${checkin.week_number === 1 ? '#ede9fe' : '#dbeafe'};color:${checkin.week_number === 1 ? '#7c3aed' : '#1d4ed8'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;">Week ${checkin.week_number}</span>`
+      : '';
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="section-label" style="margin-bottom:0;">Wellness Ratings ${weekBadge}</div>
+      </div>
+      <div class="metrics-grid">${metricsHtml}</div>
+
+      <div>
+        <div class="section-label">Daily Yes / No</div>
+        ${ynHtml}
+      </div>
+
+      <div>
+        <div class="section-label">Helpful Activities</div>
+        ${actsHtml}
+      </div>
+
+      ${checkin.notes ? `<div class="notes-box"><div class="notes-label">📝 Student Notes</div>${checkin.notes}</div>` : ''}
+
+      ${tqHtml}
+    `;
+  }
+
+  // ── BUILD 2-WEEK EVAL PANEL ────────────────────────────────
+  function buildEvalPanel(evalEntry, evalHist, student) {
+    if (!evalHist.length) {
+      return `<div class="no-eval-state">
+        <div class="no-eval-icon">📊</div>
+        <div class="no-eval-title">No 2-week evaluation yet</div>
+        <div class="no-eval-sub">${student.name?.split(' ')[0] || 'This student'} needs to complete both Week 1 and Week 2 check-ins on consecutive Mondays before an evaluation is generated.</div>
+      </div>`;
+    }
+
+    // History list on left, detail on right — or stacked
+    const histHtml = evalHist.map((ev, i) => {
+      const rc = evalLevelColor(ev.risk_level);
+      const dt = new Date(ev.evaluated_at).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' });
+      return `<div class="eval-history-item ${i === 0 ? 'selected' : ''}" style="cursor:pointer;">
+        <div class="eval-history-dot" style="background:${rc};"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:#132A3F;">${dt}</div>
+          <div style="font-size:11px;color:#8a97a8;font-weight:600;margin-top:1px;">${ev.status_label || ev.risk_level}</div>
         </div>
-      `;
+        <span style="font-size:11px;font-weight:800;background:${rc}22;color:${rc};padding:2px 9px;border-radius:20px;">${ev.risk_level}</span>
+      </div>`;
     }).join('');
 
-    const submitDate = new Date(checkin.submitted_at).toLocaleString([], {
-      month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
-
-    content.innerHTML = `
-      <div class="detail-header">
-        <div class="detail-avatar" style="background:linear-gradient(135deg,${color},${color}99);">${ini}</div>
+    return `
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:flex-start;">
         <div>
-          <div class="detail-name">${student.name || 'Unknown'}</div>
-          <div class="detail-meta">${[student.grade, student.strand].filter(Boolean).join(' · ') || student.email || '—'} &nbsp;·&nbsp; Last check-in: ${submitDate}</div>
+          <div class="section-label">Evaluation History</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">${histHtml}</div>
         </div>
-        <span class="detail-status-badge" style="background:${color}22;color:${color};">${levelLabel(level)}</span>
-        <button class="detail-msg-btn" onclick="goToChat(${student.id})"><i class="fa-solid fa-comment-dots"></i> Message</button>
+        <div id="evalDetailBlock">
+          ${buildEvalDetail(evalHist[0])}
+        </div>
       </div>
-      <div class="detail-body">
+    `;
+  }
 
-        <div>
-          <div class="section-label">Wellness Ratings</div>
-          <div class="metrics-grid">${metricsHtml}</div>
-        </div>
+  // ── BUILD SINGLE EVAL DETAIL ───────────────────────────────
+  function buildEvalDetail(ev) {
+    if (!ev) return '';
+    const rc = evalLevelColor(ev.risk_level);
+    const evalDate = new Date(ev.evaluated_at).toLocaleDateString([], { month:'long', day:'numeric', year:'numeric' });
 
-        <div>
-          <div class="section-label">Daily Yes / No</div>
-          ${ynHtml}
-        </div>
+    // Alert banner
+    const alertIcon = ev.risk_level === 'urgent' ? '🚨' : ev.risk_level === 'attention' ? '⚠️' : '✅';
+    const alertMsg  = ev.risk_level === 'urgent'
+      ? 'This student has shown signs of crisis across both weeks. Immediate counselor intervention is recommended.'
+      : ev.risk_level === 'attention'
+      ? 'This student shows concerning trends. A counselor check-in is advisable this week.'
+      : 'This student\'s 2-week assessment looks healthy overall. Keep monitoring.';
 
-        <div>
-          <div class="section-label">Helpful Activities</div>
-          ${actsHtml}
-        </div>
+    // Avg metric tiles
+    const avgMetrics = [
+      { label: 'Mood',     val: ev.avg_mood,     invert: false },
+      { label: 'Stress',   val: ev.avg_stress,   invert: true  },
+      { label: 'Sleep',    val: ev.avg_sleep,     invert: false },
+      { label: 'Academic', val: ev.avg_academic,  invert: true  },
+      { label: 'Social',   val: ev.avg_social,    invert: false },
+    ];
+    const avgHtml = avgMetrics.map(m => {
+      const c   = metricColor(m.val, m.invert);
+      const pct = ((m.val || 0) / 10) * 100;
+      return `<div class="eval-metric-tile">
+        <div class="eval-metric-label">${m.label}</div>
+        <div class="eval-metric-value" style="color:${c};">${m.val ?? '—'}</div>
+        <div class="eval-metric-bar"><div class="eval-metric-fill" style="width:${pct}%;background:${c};"></div></div>
+      </div>`;
+    }).join('');
 
-        ${checkin.notes ? `
-          <div class="notes-box">
-            <div class="notes-label">📝 Student Notes</div>
-            ${checkin.notes}
+    // Trend chips
+    const trendsHtml = `<div class="eval-trends-row">
+      <span class="trend-chip ${trendChipClass(ev.mood_trend)}">
+        Mood ${trendArrow(ev.mood_trend)}&nbsp;${trendLabel(ev.mood_trend)}
+      </span>
+      <span class="trend-chip ${trendChipClass(ev.stress_trend, true)}">
+        Stress ${trendArrow(ev.stress_trend, true)}&nbsp;${trendLabel(ev.stress_trend)}
+      </span>
+      <span class="trend-chip ${trendChipClass(ev.sleep_trend)}">
+        Sleep ${trendArrow(ev.sleep_trend)}&nbsp;${trendLabel(ev.sleep_trend)}
+      </span>
+    </div>`;
+
+    // Crisis flags
+    const crisisHtml = ev.crisis_flags > 0
+      ? `<div>
+          <div class="section-label">Crisis Flags</div>
+          ${Array.from({length: ev.crisis_flags}).map(() => `
+            <div class="crisis-flag-row" style="margin-bottom:6px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              Crisis condition detected (overwhelmed or felt unsafe)
+            </div>`).join('')}
+        </div>`
+      : `<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 14px;font-size:12.5px;font-weight:700;color:#166534;display:flex;align-items:center;gap:8px;">
+          <i class="fa-solid fa-circle-check" style="color:#22c55e;"></i> No crisis flags detected across both weeks
+        </div>`;
+
+    return `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:13px;font-weight:800;color:#132A3F;">
+            <i class="fa-solid fa-chart-line" style="color:${rc};margin-right:5px;"></i>
+            2-Week Evaluation Result
           </div>
-        ` : ''}
+          <span class="eval-date-badge"><i class="fa-regular fa-calendar"></i> Evaluated ${evalDate}</span>
+        </div>
 
-        ${tqHtml}
+        <div class="eval-alert-banner ${ev.risk_level}">
+          <div class="eval-alert-icon">${alertIcon}</div>
+          <div>
+            <div class="eval-alert-title">${ev.status_label || evalLevelLabel(ev.risk_level)}</div>
+            <div class="eval-alert-sub">${alertMsg}</div>
+          </div>
+        </div>
 
         <div>
-          <div class="section-label">Check-in History (last 7)</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">${historyHtml}</div>
+          <div class="section-label">2-Week Averages</div>
+          <div class="eval-metrics-grid">${avgHtml}</div>
         </div>
+
+        <div>
+          <div class="section-label">Trends (Week 1 → Week 2)</div>
+          ${trendsHtml}
+        </div>
+
+        <div>${crisisHtml}</div>
 
       </div>
     `;
   }
 
-  // Navigate to admin contact with this student pre-selected
+  // ── BUILD HISTORY PANEL ────────────────────────────────────
+  function buildHistoryPanel(history) {
+    if (!history.length) {
+      return `<div class="no-eval-state">
+        <div class="no-eval-icon">📭</div>
+        <div class="no-eval-title">No check-in history</div>
+        <div class="no-eval-sub">This student hasn't submitted any check-ins yet.</div>
+      </div>`;
+    }
+    const items = history.slice(0, 10).map((h, i) => {
+      const hl    = riskLevel(h);
+      const hc    = levelColor(hl);
+      const hDate = new Date(h.submitted_at).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' });
+      const wk    = h.week_number ? `<span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:800;margin-left:4px;">Wk ${h.week_number}</span>` : '';
+      return `<div class="history-item ${i === 0 ? 'selected' : ''}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${hc};flex-shrink:0;"></div>
+        <span style="flex:1;font-size:13px;font-weight:600;color:#132A3F;">${hDate}${wk}</span>
+        <span style="font-weight:800;color:${metricColor(h.mood_rating)};">${h.mood_rating ?? '—'}/10</span>
+        <span style="font-size:11.5px;background:${hc}22;color:${hc};padding:2px 9px;border-radius:20px;font-weight:800;">${levelLabel(hl).replace(/[🚨⚠️✅]/g,'').trim()}</span>
+      </div>`;
+    }).join('');
+    return `<div style="display:flex;flex-direction:column;gap:6px;">${items}</div>`;
+  }
+
+  // Navigate to admin contact
   window.goToChat = function(studentId) {
     sessionStorage.setItem('openChatStudentId', String(studentId));
     window.location.href = '2admincontact.html';
@@ -660,6 +1034,6 @@
   loadData();
 </script>
 
-  <script src="npcbuddy.js" defer></script>
+<script src="npcbuddy.js" defer></script>
 </body>
 </html>

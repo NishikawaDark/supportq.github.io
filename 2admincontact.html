@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="2admindashboardmain.css">
     <link rel="stylesheet" href="2admindashboardnavbar.css">
     <link rel="stylesheet" href="2admindashboardsidebar.css">
-    <title>Admin Interface</title>
+    <title>Contact Students | Support-Q Admin</title>
     <script>
       (function(){
         var uid  = sessionStorage.getItem('userId');
@@ -21,12 +21,10 @@
     </script>
 
     <style>
-        .main { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+        .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 28px 40px; }
         .breadcrumb { font-size: 12px; color: #8a97a8; font-weight: 600; }
         .breadcrumb span { color: #132A3F; }
 
-        /* ── PAGE HEADER ── */
-        .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 28px 40px; }
         .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
         .page-header-icon {
             width: 44px; height: 44px; border-radius: 12px;
@@ -55,55 +53,83 @@
             width: 34px; height: 34px; border-radius: 10px;
             background: linear-gradient(135deg, #f9a825, #f9d338);
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 15px; flex-shrink: 0;
+            color: #132A3F; font-size: 15px; flex-shrink: 0;
         }
-        .list-header h2 { font-size: 14.5px; font-weight: 800; color: #132A3F; }
+        .list-header h2 { font-size: 14.5px; font-weight: 800; color: #132A3F; flex: 1; }
+        .list-count { font-size: 11.5px; color: #8a97a8; font-weight: 700; }
 
         .list-toolbar { padding: 10px 14px; border-bottom: 1px solid #f0f2f5; }
         .search-box {
             display: flex; align-items: center; gap: 8px;
             background: #f5f7fa; border-radius: 10px;
-            padding: 8px 12px; font-size: 13px; color: #aab0ba; font-weight: 600;
+            padding: 8px 12px; font-size: 13px;
         }
         .search-box input {
             border: none; background: transparent; outline: none;
             font-size: 13px; color: #132A3F; font-family: inherit; flex: 1;
         }
         .search-box input::placeholder { color: #aab0ba; }
+        .search-box i { color: #aab0ba; }
 
-        .student-cards { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 2px; max-height: 600px; overflow-y: auto; }
+        .student-cards {
+            padding: 8px 10px 10px;
+            display: flex; flex-direction: column; gap: 2px;
+            max-height: 600px; overflow-y: auto;
+        }
 
         .student-card {
             display: flex; align-items: center; gap: 12px;
             padding: 10px; border-radius: 12px;
-            cursor: pointer; transition: background 0.18s; position: relative;
+            cursor: pointer; transition: background 0.18s;
+            border-left: 3px solid transparent;
+            position: relative;
         }
         .student-card:hover { background: #f5f7fa; }
-        .student-card.active { background: #132A3F; }
+        .student-card.active { background: #132A3F; border-left-color: #f9d338; }
+
+        /* risk-level left border colours */
+        .student-card.risk-urgent    { border-left-color: #ef4444; }
+        .student-card.risk-attention { border-left-color: #f9a825; }
+        .student-card.risk-stable    { border-left-color: #22c55e; }
+        .student-card.active         { border-left-color: #f9d338 !important; }
 
         .student-card-avatar {
             width: 40px; height: 40px; border-radius: 50%;
-            background: linear-gradient(135deg, #4db6e8, #2196c4);
             display: flex; align-items: center; justify-content: center;
             color: white; font-weight: 800; font-size: 14px; flex-shrink: 0;
         }
+        /* avatar colours by risk */
+        .student-card-avatar.urgent    { background: linear-gradient(135deg, #ef4444, #f87171); }
+        .student-card-avatar.attention { background: linear-gradient(135deg, #f9a825, #f9d338); color: #132A3F; }
+        .student-card-avatar.stable    { background: linear-gradient(135deg, #22c55e, #4ade80); }
+        .student-card-avatar.no-data   { background: linear-gradient(135deg, #9ca3af, #d1d5db); }
+        .student-card.active .student-card-avatar { border: 2px solid #f9d338; }
+
         .student-card-info { flex: 1; min-width: 0; }
         .student-card-name {
             font-size: 13.5px; font-weight: 700; color: #132A3F;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .student-card.active .student-card-name { color: #4DB8B8; }
-        .student-card-id { font-size: 11.5px; color: #8a97a8; font-weight: 600; margin-top: 1px; font-style: italic; }
+        .student-card.active .student-card-name { color: #f9d338; }
+        .student-card-sub { font-size: 11.5px; color: #8a97a8; font-weight: 600; margin-top: 1px; }
+        .student-card.active .student-card-sub { color: rgba(255,255,255,0.55); }
 
+        /* status badge */
         .status-badge {
             display: inline-flex; align-items: center; gap: 5px;
-            padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700; flex-shrink: 0;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 800; flex-shrink: 0;
         }
         .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .status-stable { background: #eafaf1; color: #1a9e57; }
-        .status-stable .status-dot { background: #22c55e; }
+
+        .status-urgent    { background: #fef2f2; color: #dc2626; }
+        .status-urgent    .status-dot { background: #ef4444; }
         .status-attention { background: #fff4e5; color: #c97a00; }
         .status-attention .status-dot { background: #f9a825; }
+        .status-stable    { background: #f0fdf4; color: #16a34a; }
+        .status-stable    .status-dot { background: #22c55e; }
+        .status-no-data   { background: #f3f4f6; color: #6b7280; }
+        .status-no-data   .status-dot { background: #9ca3af; }
 
         .unread-badge {
             background: #e53935; color: white; border-radius: 50%;
@@ -134,16 +160,33 @@
         }
         .chat-panel-avatar {
             width: 42px; height: 42px; border-radius: 50%;
-            background: linear-gradient(135deg, #4db6e8, #2196c4);
             display: flex; align-items: center; justify-content: center;
             color: white; font-weight: 800; font-size: 13px; flex-shrink: 0;
         }
+        .chat-panel-avatar.urgent    { background: linear-gradient(135deg, #ef4444, #f87171); }
+        .chat-panel-avatar.attention { background: linear-gradient(135deg, #f9a825, #f9d338); color: #132A3F; }
+        .chat-panel-avatar.stable    { background: linear-gradient(135deg, #22c55e, #4ade80); }
+        .chat-panel-avatar.no-data   { background: linear-gradient(135deg, #9ca3af, #d1d5db); }
+
         .chat-panel-name { font-size: 15px; font-weight: 800; color: #132A3F; }
-        .chat-panel-status {
+
+        /* risk alert strip in chat header */
+        .chat-risk-strip {
             display: flex; align-items: center; gap: 6px;
-            font-size: 12px; font-weight: 600; color: #1a9e57; margin-top: 2px;
+            font-size: 11.5px; font-weight: 700; margin-top: 3px;
         }
-        .chat-panel-status .status-dot { background: #22c55e; }
+        .chat-risk-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+        /* mini metric chips in chat header */
+        .chat-header-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+        .chat-header-chip {
+            padding: 2px 8px; border-radius: 20px;
+            font-size: 10.5px; font-weight: 800;
+        }
+        .chip-red    { background: #fef2f2; color: #dc2626; }
+        .chip-orange { background: #fff4e5; color: #c97a00; }
+        .chip-green  { background: #f0fdf4; color: #16a34a; }
+        .chip-gray   { background: #f3f4f6; color: #6b7280; }
 
         .chat-panel-body {
             flex: 1; overflow-y: auto;
@@ -179,9 +222,7 @@
             display: flex; align-items: center; gap: 8px;
         }
         .chat-date-divider::before,
-        .chat-date-divider::after {
-            content: ''; flex: 1; height: 1px; background: #f0f2f5;
-        }
+        .chat-date-divider::after { content: ''; flex: 1; height: 1px; background: #f0f2f5; }
 
         .chat-panel-footer {
             display: flex; align-items: center; gap: 10px;
@@ -203,6 +244,13 @@
         .chat-loading {
             text-align: center; color: #aab0ba;
             font-size: 13px; font-weight: 600; padding: 20px;
+        }
+
+        /* section divider in student list (Urgent / Attention / Stable) */
+        .list-section-label {
+            font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+            text-transform: uppercase; color: #aab0ba;
+            padding: 8px 6px 2px; margin-top: 4px;
         }
     </style>
 </head>
@@ -238,9 +286,7 @@
     <!-- SIDEBAR -->
     <div class="sidebarwrapper">
         <div class="sidebar">
-            <div class="sidebar-brand">
-                <i class="fa-solid fa-brain"></i> Support - Q
-            </div>
+            <div class="sidebar-brand"><i class="fa-solid fa-brain"></i> Support - Q</div>
             <hr class="divider">
             <button onclick="window.location.href='2admindashboard.html'"><i class="fa-solid fa-house"></i> Dashboard</button>
             <button class="active"><i class="fa-solid fa-address-book"></i> Contact Students</button>
@@ -252,125 +298,98 @@
     <!-- MAIN CONTENT -->
     <div class="main-content">
 
-    <div>
-      <div class="breadcrumb">Support-Q &rsaquo; <span>Contact Students</span></div>
-      <div class="page-header">
-        <div class="page-header-icon"><i class="fa-solid fa-address-book"></i></div>
         <div>
-          <h1>Contact Students</h1>
-          <p>Select a student to view their profile and send a message</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="twobox" style="align-items:stretch;">
-
-        <!-- Student Card List -->
-        <div class="listofstudents">
-            <div class="list-header">
-                <div class="list-header-icon">
-                    <i class="fa-solid fa-address-book"></i>
+            <div class="breadcrumb">Support-Q &rsaquo; <span>Contact Students</span></div>
+            <div class="page-header">
+                <div class="page-header-icon"><i class="fa-solid fa-address-book"></i></div>
+                <div>
+                    <h1>Contact Students</h1>
+                    <p>Urgent and at-risk students are shown first</p>
                 </div>
-                <h2>Select a Student</h2>
-            </div>
-            <div class="list-toolbar">
-                <div class="search-box">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" placeholder="Search students…">
-                </div>
-            </div>
-            <div class="student-cards" id="studentCards">
-                <p class="chat-loading">Loading students…</p>
             </div>
         </div>
 
-        <!-- Right Panel -->
-        <div class="descriptionofstudent" id="rightPanel">
-            <div class="chat-empty-state" id="chatEmptyState">
-                <div class="chat-empty-icon"><i class="fa-regular fa-comments"></i></div>
-                <p class="chat-empty-title">No student selected</p>
-                <p class="chat-empty-sub">Select a student from the list to view their profile and send a message.</p>
-            </div>
+        <div class="twobox" style="align-items:stretch;">
 
-            <div class="chat-panel-inner" id="chatPanelInner" style="display:none;">
-                <div class="chat-panel-header">
-                    <div class="chat-panel-avatar" id="chatPanelAvatar"></div>
-                    <div class="chat-panel-meta">
-                        <p class="chat-panel-name" id="chatPanelName"></p>
-                        <p class="chat-panel-status"><span class="status-dot"></span> <span id="chatPanelStatusText">Online</span></p>
+            <!-- Student Card List -->
+            <div class="listofstudents">
+                <div class="list-header">
+                    <div class="list-header-icon"><i class="fa-solid fa-address-book"></i></div>
+                    <h2>Students</h2>
+                    <span class="list-count" id="listCount"></span>
+                </div>
+                <div class="list-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="searchInput" placeholder="Search students…">
                     </div>
                 </div>
-                <div class="chat-panel-body" id="chatPanelBody">
-                    <p class="chat-loading">Loading messages…</p>
-                </div>
-                <div class="chat-panel-footer">
-                    <input class="chat-panel-input" id="chatPanelInput" type="text" placeholder="Type a message…" autocomplete="off"/>
-                    <button class="chat-panel-send" id="chatPanelSend">
-                        <i class="fa-solid fa-paper-plane"></i> Send
-                    </button>
+                <div class="student-cards" id="studentCards">
+                    <p class="chat-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</p>
                 </div>
             </div>
-        </div>
 
-    </div>
+            <!-- Right Panel -->
+            <div class="descriptionofstudent" id="rightPanel">
+                <div class="chat-empty-state" id="chatEmptyState">
+                    <div class="chat-empty-icon"><i class="fa-regular fa-comments"></i></div>
+                    <p class="chat-empty-title">No student selected</p>
+                    <p class="chat-empty-sub">Select a student from the list to view their profile and send a message.</p>
+                </div>
+
+                <div class="chat-panel-inner" id="chatPanelInner" style="display:none;">
+                    <div class="chat-panel-header" id="chatPanelHeader">
+                        <div class="chat-panel-avatar" id="chatPanelAvatar"></div>
+                        <div class="chat-panel-meta" style="flex:1;min-width:0;">
+                            <p class="chat-panel-name" id="chatPanelName"></p>
+                            <div class="chat-risk-strip" id="chatRiskStrip"></div>
+                            <div class="chat-header-chips" id="chatHeaderChips"></div>
+                        </div>
+                    </div>
+                    <div class="chat-panel-body" id="chatPanelBody">
+                        <p class="chat-loading">Loading messages…</p>
+                    </div>
+                    <div class="chat-panel-footer">
+                        <input class="chat-panel-input" id="chatPanelInput" type="text" placeholder="Type a message…" autocomplete="off"/>
+                        <button class="chat-panel-send" id="chatPanelSend">
+                            <i class="fa-solid fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div><!-- /.main-content -->
 </div><!-- /.page-wrapper -->
 
-<!-- Dropdown toggle -->
 <script>
     const avatarBtn    = document.getElementById("avatarBtn");
     const dropdownMenu = document.getElementById("dropdownMenu");
-
-    function toggleDropdown(open) {
-        const isOpen = open !== undefined ? open : !avatarBtn.classList.contains("open");
-        avatarBtn.classList.toggle("open", isOpen);
-        dropdownMenu.classList.toggle("show", isOpen);
-    }
-
-    avatarBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleDropdown(); });
-    document.addEventListener("click", () => toggleDropdown(false));
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") toggleDropdown(false); });
-
-    function handleLogout() {
-        sessionStorage.clear();
-        window.location.href = "index.html";
-    }
-
-    // Show admin name from session
+    avatarBtn.addEventListener("click", (e) => { e.stopPropagation(); avatarBtn.classList.toggle("open"); dropdownMenu.classList.toggle("show"); });
+    document.addEventListener("click", () => { avatarBtn.classList.remove("open"); dropdownMenu.classList.remove("show"); });
+    function handleLogout() { sessionStorage.clear(); window.location.href = "index.html"; }
     const adminName = sessionStorage.getItem("userName");
     if (adminName) document.getElementById("adminNameDisplay").textContent = adminName;
 </script>
 
-<!-- Main chat logic -->
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-    const supabaseUrl = 'https://damkluawdvsthjjcpzgp.supabase.co'
-    const supabaseKey = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6'
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Guard: admin only
-    // if (sessionStorage.getItem("userRole") !== "admin") window.location.href = "index.html";
+    const supabase = createClient(
+        'https://damkluawdvsthjjcpzgp.supabase.co',
+        'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6'
+    );
 
     const _rawAdminId = sessionStorage.getItem("userId");
     let adminId = _rawAdminId !== null && _rawAdminId !== "" && !isNaN(Number(_rawAdminId))
-        ? Number(_rawAdminId)
-        : null;
+        ? Number(_rawAdminId) : null;
 
-    console.log("[Admin] userId from session:", _rawAdminId, "→ parsed:", adminId);
-
-    // Fallback: if userId missing, re-fetch from DB using stored email
     async function ensureAdminId() {
         if (adminId) return true;
-        const storedEmail = sessionStorage.getItem("userEmail");
-        if (!storedEmail) return false;
-        const { data } = await supabase.from('profiles').select('id').eq('email', storedEmail).single();
-        if (data) {
-            adminId = data.id;
-            sessionStorage.setItem("userId", String(adminId));
-            console.log("[Admin] recovered userId from email:", adminId);
-            return true;
-        }
+        const email = sessionStorage.getItem("userEmail");
+        if (!email) return false;
+        const { data } = await supabase.from('profiles').select('id').eq('email', email).single();
+        if (data) { adminId = data.id; sessionStorage.setItem("userId", String(adminId)); return true; }
         return false;
     }
 
@@ -379,235 +398,78 @@
     const chatPanelInner  = document.getElementById("chatPanelInner");
     const chatPanelAvatar = document.getElementById("chatPanelAvatar");
     const chatPanelName   = document.getElementById("chatPanelName");
+    const chatRiskStrip   = document.getElementById("chatRiskStrip");
+    const chatHeaderChips = document.getElementById("chatHeaderChips");
     const chatPanelBody   = document.getElementById("chatPanelBody");
     const chatPanelInput  = document.getElementById("chatPanelInput");
     const chatPanelSend   = document.getElementById("chatPanelSend");
     const searchInput     = document.getElementById("searchInput");
 
-    let activeStudent     = null;   // { id, name, initials }
-    let realtimeSub       = null;   // active subscription
-    let allStudents       = [];
+    let activeStudent = null;
+    let realtimeSub   = null;
+    // enriched student objects: { ...profile, checkin, level }
+    let allStudents   = [];
+    let unreadCounts  = {};
 
-    /* ── UTILS ── */
+    // ── UTILS ──────────────────────────────────────────────────
     function initials(name) {
-        if (!name) return "?";
-        return name.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
+        return (name || "?").split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
     }
-
-    function formatTime(isoStr) {
-        return new Date(isoStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    function formatTime(iso) {
+        return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
-
-    function formatDate(isoStr) {
-        const d = new Date(isoStr);
-        const today = new Date();
+    function formatDate(iso) {
+        const d = new Date(iso), today = new Date();
         if (d.toDateString() === today.toDateString()) return "Today";
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
         if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
         return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
     }
 
-    /* ── DELETE MESSAGE ── */
-    async function deleteMessage(msgId, msgEl) {
-        if (!confirm("Delete this message?")) return;
-        const { error } = await supabase.from('messages').delete().eq('id', msgId);
-        if (error) {
-            alert("Failed to delete: " + error.message);
-        } else {
-            msgEl.remove();
-        }
+    // ── RISK LEVEL — same logic as assessments page ────────────
+    function riskLevel(c) {
+        if (!c) return 'no-data';
+        if (c.mood_rating <= 4 || c.overwhelmed === 'yes' || c.felt_safe === 'no') return 'urgent';
+        if (c.mood_rating <= 6 || c.stress_level >= 7) return 'attention';
+        return 'stable';
     }
 
-    /* ── BUILD MESSAGE ELEMENT ── */
-    function buildMsgEl(msg) {
-        const isAdmin     = msg.sender === adminId;
-        const senderClass = isAdmin ? "admin" : "student";
-
-        const msgEl = document.createElement("div");
-        msgEl.className = `chat-msg ${senderClass}`;
-        msgEl.dataset.msgId = msg.id;
-
-        const deleteBtn = isAdmin
-            ? `<button class="delete-btn" title="Delete message"><i class="fa-solid fa-trash"></i></button>`
-            : "";
-
-        msgEl.innerHTML = `
-            <div class="chat-bubble-wrap">
-                <div class="chat-bubble">${escapeHtml(msg.files)}</div>
-                ${deleteBtn}
-            </div>
-            <span class="chat-time">${formatTime(msg.date)}</span>
-        `;
-
-        if (isAdmin) {
-            msgEl.querySelector('.delete-btn').addEventListener('click', () => deleteMessage(msg.id, msgEl));
-        }
-
-        return msgEl;
+    // Lower = worse (for sorting urgent to top)
+    function riskScore(c) {
+        if (!c) return 999;
+        let s = (c.mood_rating || 5) * 2;
+        s -= (c.stress_level || 5);
+        if (c.overwhelmed  === 'yes') s -= 5;
+        if (c.felt_safe    === 'no')  s -= 5;
+        if (c.slept_enough === 'no')  s -= 2;
+        return s;
     }
 
-    /* ── RENDER MESSAGES ── */
-    function renderMessages(messages) {
-        chatPanelBody.innerHTML = "";
-        if (!messages || messages.length === 0) {
-            chatPanelBody.innerHTML = `<p class="chat-loading">No messages yet. Say hello!</p>`;
-            return;
-        }
-
-        let lastDate = null;
-        messages.forEach(msg => {
-            const msgDate = formatDate(msg.date);
-            if (msgDate !== lastDate) {
-                const divider = document.createElement("div");
-                divider.className = "chat-date-divider";
-                divider.textContent = msgDate;
-                chatPanelBody.appendChild(divider);
-                lastDate = msgDate;
-            }
-            chatPanelBody.appendChild(buildMsgEl(msg));
-        });
-
-        chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
+    function levelColor(level) {
+        return level === 'urgent' ? '#ef4444'
+             : level === 'attention' ? '#f9a825'
+             : level === 'stable' ? '#22c55e'
+             : '#9ca3af';
+    }
+    function levelLabel(level) {
+        return level === 'urgent'    ? '🚨 Urgent'
+             : level === 'attention' ? '⚠️ Attention'
+             : level === 'stable'    ? '✅ Stable'
+             : 'No check-ins';
     }
 
-    function escapeHtml(text) {
-        const d = document.createElement("div");
-        d.appendChild(document.createTextNode(text || ""));
-        return d.innerHTML;
+    function chipClass(val, invert = false) {
+        if (val == null) return 'chip-gray';
+        if (invert) return val >= 7 ? 'chip-red' : val >= 5 ? 'chip-orange' : 'chip-green';
+        return val >= 7 ? 'chip-green' : val >= 5 ? 'chip-orange' : 'chip-red';
     }
 
-    /* ── LOAD MESSAGES ── */
-    async function loadMessages(studentId) {
-        await ensureAdminId();
-
-        if (!adminId) {
-            chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Session error: userId not found (got: ${_rawAdminId}). Please <a href="index.html">log in again</a>.</p>`;
-            return;
-        }
-
-        chatPanelBody.innerHTML = `<p class="chat-loading">Loading messages…</p>`;
-
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .or(`and(sender.eq.${adminId},receiver.eq.${studentId}),and(sender.eq.${studentId},receiver.eq.${adminId})`)
-            .order('date', { ascending: true });
-
-        if (error) {
-            chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Error loading messages.</p>`;
-            return;
-        }
-
-        renderMessages(data);
-
-        // Mark student's messages as seen
-        await supabase
-            .from('messages')
-            .update({ seen: 1 })
-            .eq('sender', studentId)
-            .eq('receiver', adminId)
-            .eq('seen', 0);
-
-        updateUnreadBadge(studentId, 0);
-    }
-
-    /* ── REALTIME SUBSCRIPTION ── */
-    function subscribeToMessages(studentId) {
-        if (realtimeSub) {
-            supabase.removeChannel(realtimeSub);
-            realtimeSub = null;
-        }
-
-        realtimeSub = supabase
-            .channel(`chat_admin_${adminId}_student_${studentId}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages'
-            }, payload => {
-                const msg = payload.new;
-                // Only handle messages relevant to this conversation
-                const isRelevant =
-                    (msg.sender === adminId   && msg.receiver === studentId) ||
-                    (msg.sender === studentId && msg.receiver === adminId);
-
-                if (!isRelevant) return;
-
-                // Add date divider if needed
-                const lastDivider = chatPanelBody.querySelector(".chat-date-divider:last-of-type");
-                const msgDate = formatDate(msg.date);
-                if (!lastDivider || lastDivider.textContent !== msgDate) {
-                    const divider = document.createElement("div");
-                    divider.className = "chat-date-divider";
-                    divider.textContent = msgDate;
-                    chatPanelBody.appendChild(divider);
-                }
-
-                chatPanelBody.appendChild(buildMsgEl(msg));
-                chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
-
-                // If student message, mark seen
-                if (!isAdmin) {
-                    supabase.from('messages').update({ seen: 1 }).eq('id', msg.id);
-                    updateUnreadBadge(studentId, 0);
-                }
-            })
-            .subscribe();
-    }
-
-    /* ── OPEN CHAT ── */
-    function openChatPanel(student) {
-        activeStudent = student;
-
-        chatPanelAvatar.textContent = student.initials;
-        chatPanelName.textContent   = student.name;
-        chatEmptyState.style.display  = "none";
-        chatPanelInner.style.display  = "flex";
-
-        loadMessages(student.id);
-        subscribeToMessages(student.id);
-
-        setTimeout(() => chatPanelInput.focus(), 150);
-    }
-
-    /* ── SEND MESSAGE ── */
-    async function sendMessage() {
-        const text = chatPanelInput.value.trim();
-        if (!text || !activeStudent) return;
-        await ensureAdminId();
-        if (!adminId) { alert("Session error: userId not found. Please log in again."); return; }
-
-        chatPanelInput.value = "";
-        chatPanelInput.disabled = true;
-        chatPanelSend.disabled  = true;
-
-        const { error } = await supabase.from('messages').insert([{
-            sender:   adminId,
-            receiver: activeStudent.id,
-            files:    text,
-            date:     new Date().toISOString(),
-            seen:     0
-        }]);
-
-        chatPanelInput.disabled = false;
-        chatPanelSend.disabled  = false;
-        chatPanelInput.focus();
-
-        if (error) alert("Failed to send: " + error.message);
-    }
-
-    chatPanelSend.addEventListener("click", sendMessage);
-    chatPanelInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
-
-    /* ── UNREAD BADGE ── */
+    // ── UNREAD COUNTS ──────────────────────────────────────────
     async function fetchUnreadCounts() {
         if (!adminId) return {};
         const { data } = await supabase
-            .from('messages')
-            .select('sender')
-            .eq('receiver', adminId)
-            .eq('seen', 0);
-
+            .from('messages').select('sender')
+            .eq('receiver', adminId).eq('seen', 0);
         const counts = {};
         (data || []).forEach(m => { counts[m.sender] = (counts[m.sender] || 0) + 1; });
         return counts;
@@ -618,105 +480,302 @@
         if (!card) return;
         let badge = card.querySelector(".unread-badge");
         if (count > 0) {
-            if (!badge) {
-                badge = document.createElement("div");
-                badge.className = "unread-badge";
-                card.appendChild(badge);
-            }
+            if (!badge) { badge = document.createElement("div"); badge.className = "unread-badge"; card.appendChild(badge); }
             badge.textContent = count;
-        } else {
-            if (badge) badge.remove();
-        }
+        } else if (badge) { badge.remove(); }
     }
 
-    /* ── LOAD STUDENTS ── */
+    // ── LOAD ALL DATA ──────────────────────────────────────────
     async function loadStudents() {
         const container = document.getElementById("studentCards");
+        await ensureAdminId();
 
-        const [{ data, error }, unreadCounts] = await Promise.all([
+        // Fetch students, their latest checkins, and unread counts in parallel
+        const [
+            { data: profiles },
+            { data: checkins },
+            counts,
+        ] = await Promise.all([
             supabase.from('profiles').select('*').eq('role', 'student'),
-            fetchUnreadCounts()
+            supabase.from('checkins').select('*').order('submitted_at', { ascending: false }),
+            fetchUnreadCounts(),
         ]);
 
-        if (error) {
-            container.innerHTML = `<p style="text-align:center;color:#e53935;padding:20px;font-size:13px;">Error loading students.</p>`;
-            return;
-        }
+        unreadCounts = counts;
 
-        if (!data || data.length === 0) {
+        if (!profiles?.length) {
             container.innerHTML = `<p style="text-align:center;color:#aaa;padding:20px;font-size:13px;">No students found.</p>`;
             return;
         }
 
-        allStudents = data;
-        renderStudentList(allStudents, unreadCounts);
+        // Build latest-checkin map
+        const latestMap = {};
+        (checkins || []).forEach(c => {
+            if (!latestMap[c.student_id]) latestMap[c.student_id] = c;
+        });
+
+        // Enrich each student with their checkin + computed level
+        allStudents = profiles.map(s => ({
+            ...s,
+            checkin: latestMap[s.id] || null,
+            level:   riskLevel(latestMap[s.id]),
+            score:   riskScore(latestMap[s.id]),
+        }));
+
+        // Sort: lowest score (worst) first, then alphabetically within same bucket
+        allStudents.sort((a, b) => {
+            if (a.score !== b.score) return a.score - b.score;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+
+        renderStudentList(allStudents);
     }
 
-    function renderStudentList(students, unreadCounts = {}) {
+    // ── RENDER STUDENT LIST ────────────────────────────────────
+    function renderStudentList(students) {
         const container = document.getElementById("studentCards");
+        const q = searchInput.value.toLowerCase().trim();
+
+        const filtered = q
+            ? students.filter(s =>
+                (s.name  || "").toLowerCase().includes(q) ||
+                (s.grade || "").toLowerCase().includes(q) ||
+                (s.email || "").toLowerCase().includes(q) ||
+                (s.strand || "").toLowerCase().includes(q)
+              )
+            : students;
+
+        document.getElementById("listCount").textContent = filtered.length;
         container.innerHTML = "";
 
-        if (students.length === 0) {
-            container.innerHTML = `<p style="text-align:center;color:#aaa;padding:20px;font-size:13px;">No students found.</p>`;
+        if (!filtered.length) {
+            container.innerHTML = `<p style="text-align:center;color:#aaa;padding:20px;font-size:13px;">No students match.</p>`;
             return;
         }
 
-        students.forEach(student => {
-            const ini         = initials(student.name);
-            const alertStatus = student.alert_status || "Stable";
-            const statusClass = alertStatus === "Stable" ? "status-stable" : "status-attention";
-            const unread      = unreadCounts[student.id] || 0;
+        // Group by level for section headers (only when not searching)
+        const groups = q
+            ? [{ label: null, items: filtered }]
+            : [
+                { label: '🚨 Urgent',     items: filtered.filter(s => s.level === 'urgent')    },
+                { label: '⚠️ Attention',  items: filtered.filter(s => s.level === 'attention') },
+                { label: '✅ Stable',     items: filtered.filter(s => s.level === 'stable')    },
+                { label: 'No check-ins',  items: filtered.filter(s => s.level === 'no-data')  },
+            ].filter(g => g.items.length > 0);
 
-            const card = document.createElement("div");
-            card.className = "student-card";
-            card.dataset.id = student.id;
-            card.innerHTML = `
-                <div class="student-card-avatar">${ini}</div>
-                <div class="student-card-info">
-                    <div class="student-card-name">${student.name || "Unknown"}</div>
-                    <div class="student-card-id">${student.grade || "—"} ${student.strand ? "· " + student.strand : ""}</div>
-                </div>
-                <span class="status-badge ${statusClass}">
-                    <span class="status-dot"></span> ${alertStatus}
-                </span>
-                ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ""}
-            `;
+        groups.forEach(group => {
+            if (group.label) {
+                const label = document.createElement("div");
+                label.className = "list-section-label";
+                label.textContent = group.label;
+                container.appendChild(label);
+            }
 
-            card.addEventListener("click", () => {
-                document.querySelectorAll(".student-card").forEach(c => c.classList.remove("active"));
-                card.classList.add("active");
-                openChatPanel({ id: student.id, name: student.name || "Unknown", initials: ini });
+            group.items.forEach(student => {
+                const ini    = initials(student.name);
+                const level  = student.level;
+                const color  = levelColor(level);
+                const unread = unreadCounts[student.id] || 0;
+                const isActive = activeStudent?.id === student.id;
+
+                const card = document.createElement("div");
+                card.className  = `student-card risk-${level} ${isActive ? 'active' : ''}`;
+                card.dataset.id = student.id;
+
+                // Mini metric chips if checkin exists
+                const c = student.checkin;
+                const moodChip   = c ? `<span class="status-badge ${level === 'urgent' ? 'status-urgent' : level === 'attention' ? 'status-attention' : 'status-stable'}"><span class="status-dot"></span>${levelLabel(level).replace(/[🚨⚠️✅]/g,'').trim()}</span>` : `<span class="status-badge status-no-data"><span class="status-dot"></span>No data</span>`;
+
+                card.innerHTML = `
+                    <div class="student-card-avatar ${level}">${ini}</div>
+                    <div class="student-card-info">
+                        <div class="student-card-name">${student.name || "Unknown"}</div>
+                        <div class="student-card-sub">${[student.grade, student.strand].filter(Boolean).join(' · ') || student.email || '—'}</div>
+                    </div>
+                    ${moodChip}
+                    ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ""}
+                `;
+
+                card.addEventListener("click", () => {
+                    document.querySelectorAll(".student-card").forEach(c => c.classList.remove("active"));
+                    card.classList.add("active");
+                    openChatPanel(student);
+                });
+
+                container.appendChild(card);
             });
-
-            container.appendChild(card);
         });
     }
 
-    /* ── SEARCH ── */
-    searchInput.addEventListener("input", () => {
-        const q = searchInput.value.toLowerCase().trim();
-        const filtered = allStudents.filter(s =>
-            (s.name  || "").toLowerCase().includes(q) ||
-            (s.grade || "").toLowerCase().includes(q) ||
-            (s.email || "").toLowerCase().includes(q)
-        );
-        renderStudentList(filtered);
-    });
+    // ── OPEN CHAT PANEL ───────────────────────────────────────
+    function openChatPanel(student) {
+        activeStudent = student;
+        const level = student.level;
+        const color = levelColor(level);
+        const c = student.checkin;
 
-    /* ── REALTIME UNREAD (for sidebar badges while chatting) ── */
+        // Avatar
+        chatPanelAvatar.textContent = initials(student.name);
+        chatPanelAvatar.className   = `chat-panel-avatar ${level}`;
+        chatPanelName.textContent   = student.name || "Unknown";
+
+        // Risk strip
+        chatRiskStrip.innerHTML = `
+            <span class="chat-risk-dot" style="background:${color};"></span>
+            <span style="color:${color};">${levelLabel(level)}</span>
+            ${c ? `<span style="color:#aab0ba;font-weight:600;font-size:11px;">· Mood ${c.mood_rating ?? '—'}/10 · Stress ${c.stress_level ?? '—'}/10</span>` : ''}
+        `;
+
+        // Mini chips for crisis signals
+        if (c) {
+            const chips = [];
+            if (c.overwhelmed === 'yes') chips.push(`<span class="chat-header-chip chip-red">Overwhelmed</span>`);
+            if (c.felt_safe   === 'no')  chips.push(`<span class="chat-header-chip chip-red">Felt unsafe</span>`);
+            if (c.slept_enough === 'no') chips.push(`<span class="chat-header-chip chip-orange">Poor sleep</span>`);
+            if (c.ate_meals   === 'no')  chips.push(`<span class="chat-header-chip chip-orange">Skipped meals</span>`);
+            if (c.week_number)           chips.push(`<span class="chat-header-chip chip-gray">Week ${c.week_number} check-in</span>`);
+            chatHeaderChips.innerHTML = chips.join('');
+        } else {
+            chatHeaderChips.innerHTML = `<span class="chat-header-chip chip-gray">No check-ins yet</span>`;
+        }
+
+        chatEmptyState.style.display  = "none";
+        chatPanelInner.style.display  = "flex";
+
+        loadMessages(student.id);
+        subscribeToMessages(student.id);
+        setTimeout(() => chatPanelInput.focus(), 150);
+    }
+
+    // ── MESSAGES ──────────────────────────────────────────────
+    function escapeHtml(text) {
+        const d = document.createElement("div");
+        d.appendChild(document.createTextNode(text || ""));
+        return d.innerHTML;
+    }
+
+    async function deleteMessage(msgId, msgEl) {
+        if (!confirm("Delete this message?")) return;
+        const { error } = await supabase.from('messages').delete().eq('id', msgId);
+        if (error) alert("Failed to delete: " + error.message);
+        else msgEl.remove();
+    }
+
+    function buildMsgEl(msg) {
+        const isAdmin = msg.sender === adminId;
+        const msgEl = document.createElement("div");
+        msgEl.className = `chat-msg ${isAdmin ? 'admin' : 'student'}`;
+        msgEl.dataset.msgId = msg.id;
+        const deleteBtn = isAdmin ? `<button class="delete-btn" title="Delete"><i class="fa-solid fa-trash"></i></button>` : "";
+        msgEl.innerHTML = `
+            <div class="chat-bubble-wrap">
+                <div class="chat-bubble">${escapeHtml(msg.files)}</div>
+                ${deleteBtn}
+            </div>
+            <span class="chat-time">${formatTime(msg.date)}</span>
+        `;
+        if (isAdmin) msgEl.querySelector('.delete-btn').addEventListener('click', () => deleteMessage(msg.id, msgEl));
+        return msgEl;
+    }
+
+    function renderMessages(messages) {
+        chatPanelBody.innerHTML = "";
+        if (!messages?.length) {
+            chatPanelBody.innerHTML = `<p class="chat-loading">No messages yet. Say hello!</p>`;
+            return;
+        }
+        let lastDate = null;
+        messages.forEach(msg => {
+            const msgDate = formatDate(msg.date);
+            if (msgDate !== lastDate) {
+                const div = document.createElement("div");
+                div.className = "chat-date-divider";
+                div.textContent = msgDate;
+                chatPanelBody.appendChild(div);
+                lastDate = msgDate;
+            }
+            chatPanelBody.appendChild(buildMsgEl(msg));
+        });
+        chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
+    }
+
+    async function loadMessages(studentId) {
+        await ensureAdminId();
+        if (!adminId) {
+            chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Session error. Please <a href="index.html">log in again</a>.</p>`;
+            return;
+        }
+        chatPanelBody.innerHTML = `<p class="chat-loading">Loading messages…</p>`;
+        const { data, error } = await supabase.from('messages').select('*')
+            .or(`and(sender.eq.${adminId},receiver.eq.${studentId}),and(sender.eq.${studentId},receiver.eq.${adminId})`)
+            .order('date', { ascending: true });
+        if (error) { chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Error loading messages.</p>`; return; }
+        renderMessages(data);
+        await supabase.from('messages').update({ seen: 1 }).eq('sender', studentId).eq('receiver', adminId).eq('seen', 0);
+        updateUnreadBadge(studentId, 0);
+    }
+
+    function subscribeToMessages(studentId) {
+        if (realtimeSub) { supabase.removeChannel(realtimeSub); realtimeSub = null; }
+        realtimeSub = supabase.channel(`chat_admin_${adminId}_student_${studentId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                const msg = payload.new;
+                const relevant = (msg.sender === adminId && msg.receiver === studentId)
+                              || (msg.sender === studentId && msg.receiver === adminId);
+                if (!relevant) return;
+                const lastDiv = chatPanelBody.querySelector(".chat-date-divider:last-of-type");
+                const msgDate = formatDate(msg.date);
+                if (!lastDiv || lastDiv.textContent !== msgDate) {
+                    const div = document.createElement("div");
+                    div.className = "chat-date-divider";
+                    div.textContent = msgDate;
+                    chatPanelBody.appendChild(div);
+                }
+                chatPanelBody.appendChild(buildMsgEl(msg));
+                chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
+                if (msg.sender === studentId) supabase.from('messages').update({ seen: 1 }).eq('id', msg.id);
+            })
+            .subscribe();
+    }
+
+    // ── SEND MESSAGE ───────────────────────────────────────────
+    async function sendMessage() {
+        const text = chatPanelInput.value.trim();
+        if (!text || !activeStudent) return;
+        await ensureAdminId();
+        if (!adminId) { alert("Session error. Please log in again."); return; }
+        chatPanelInput.value = "";
+        chatPanelInput.disabled = true;
+        chatPanelSend.disabled  = true;
+        const { error } = await supabase.from('messages').insert([{
+            sender: adminId, receiver: activeStudent.id,
+            files: text, date: new Date().toISOString(), seen: 0
+        }]);
+        chatPanelInput.disabled = false;
+        chatPanelSend.disabled  = false;
+        chatPanelInput.focus();
+        if (error) alert("Failed to send: " + error.message);
+    }
+
+    chatPanelSend.addEventListener("click", sendMessage);
+    chatPanelInput.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+
+    // ── SEARCH ────────────────────────────────────────────────
+    searchInput.addEventListener("input", () => renderStudentList(allStudents));
+
+    // ── REALTIME UNREAD WATCHER ────────────────────────────────
     supabase.channel('admin_unread_watcher')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
             const msg = payload.new;
-            // If it's a new message TO admin and NOT from the currently open chat
             if (msg.receiver === adminId && (!activeStudent || msg.sender !== activeStudent.id)) {
-                const currentCount = parseInt(document.querySelector(`.student-card[data-id="${msg.sender}"] .unread-badge`)?.textContent || "0");
-                updateUnreadBadge(msg.sender, currentCount + 1);
+                const cur = parseInt(document.querySelector(`.student-card[data-id="${msg.sender}"] .unread-badge`)?.textContent || "0");
+                updateUnreadBadge(msg.sender, cur + 1);
             }
         })
         .subscribe();
 
+    // ── INIT ──────────────────────────────────────────────────
     loadStudents().then(() => {
-        // Auto-open chat if navigated from assessments/dashboard "Message" button
         const targetId = sessionStorage.getItem('openChatStudentId');
         if (targetId) {
             sessionStorage.removeItem('openChatStudentId');
@@ -726,7 +785,6 @@
     });
 </script>
 
-
-  <script src="npcbuddy.js" defer></script>
+<script src="npcbuddy.js" defer></script>
 </body>
 </html>

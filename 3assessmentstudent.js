@@ -1,6 +1,9 @@
 // ============================================================
-//  3assessmentstudent.js  — Gamified Daily Check-in
-//  v2: Mode picker, Claude-powered Buddy, Crisis-aware flow
+//  3assessmentstudent.js  — Weekly Assessment System
+//  - Assessment is only available on Mondays
+//  - Week 1 result is visible to admin immediately
+//  - Week 2 result triggers a full 2-week evaluation sent to admin
+//  - Mode picker fills the full available space
 // ============================================================
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -24,18 +27,162 @@ function showToast(msg, isError = false) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3500);
 }
 
-// ── TODAY ────────────────────────────────────────────────────
+// ── WEEK HELPERS ─────────────────────────────────────────────
+// Returns the Monday (YYYY-MM-DD) of a given date
+function getMondayOf(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun,1=Mon,...
+  const diff = (day === 0) ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
-async function checkAlreadySubmitted() {
-  if (!studentId) return false;
+function isMonday() {
+  return new Date().getDay() === 1;
+}
+
+// Returns how many weeks ago a monday was (0 = this week, 1 = last week, etc.)
+function weeksAgo(mondayStr) {
+  const thisMonday = getMondayOf(new Date());
+  const that = new Date(mondayStr + 'T12:00:00');
+  const diff = (new Date(thisMonday + 'T12:00:00') - that) / (7 * 24 * 3600 * 1000);
+  return Math.round(diff);
+}
+
+// Get the next Monday date string
+function getNextMonday() {
+  const d = new Date();
+  const day = d.getDay();
+  const daysUntilMonday = day === 0 ? 1 : 8 - day;
+  d.setDate(d.getDate() + daysUntilMonday);
+  return d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+// ── SUBMISSION CHECK ─────────────────────────────────────────
+// Check if student already submitted THIS week (Monday-Sunday)
+async function checkThisWeekSubmission() {
+  if (!studentId) return null;
+  const thisMonday = getMondayOf(new Date());
+  // Get Sunday (end of this week)
+  const sunday = new Date(thisMonday + 'T00:00:00');
+  sunday.setDate(sunday.getDate() + 6);
+  const sundayStr = sunday.toISOString().slice(0, 10);
+
   const { data } = await supabase
-    .from('checkins').select('id')
+    .from('checkins')
+    .select('*')
     .eq('student_id', studentId)
-    .gte('submitted_at', todayStr() + 'T00:00:00')
-    .lte('submitted_at', todayStr() + 'T23:59:59')
+    .gte('submitted_at', thisMonday + 'T00:00:00')
+    .lte('submitted_at', sundayStr + 'T23:59:59')
+    .order('submitted_at', { ascending: false })
     .limit(1);
-  return data && data.length > 0;
+
+  return (data && data.length > 0) ? data[0] : null;
+}
+
+// Get the last 2 weekly submissions (by their week's Monday)
+async function getLastTwoWeekSubmissions() {
+  if (!studentId) return [];
+  const { data } = await supabase
+    .from('checkins')
+    .select('*')
+    .eq('student_id', studentId)
+    .order('submitted_at', { ascending: false })
+    .limit(10);
+
+  if (!data?.length) return [];
+
+  // Group by week monday
+  const byWeek = {};
+  data.forEach(c => {
+    const mon = getMondayOf(new Date(c.submitted_at));
+    if (!byWeek[mon]) byWeek[mon] = c;
+  });
+
+  // Return sorted by most recent
+  return Object.entries(byWeek)
+    .sort(([a], [b]) => new Date(b) - new Date(a))
+    .map(([mon, c]) => ({ monday: mon, checkin: c }));
+}
+
+// ── 2-WEEK EVALUATION ────────────────────────────────────────
+function evaluate2Weeks(week1, week2) {
+  // week2 is MORE recent; week1 is older
+  const avg = (a, b) => Math.round(((a || 5) + (b || 5)) / 2);
+  const avgMood    = avg(week1.mood_rating,        week2.mood_rating);
+  const avgStress  = avg(week1.stress_level,       week2.stress_level);
+  const avgSleep   = avg(week1.sleep_quality,      week2.sleep_quality);
+  const avgAcad    = avg(week1.academic_pressure,  week2.academic_pressure);
+  const avgSocial  = avg(week1.social_wellbeing,   week2.social_wellbeing);
+
+  const crisisFlags = [
+    week1.overwhelmed === 'yes', week2.overwhelmed === 'yes',
+    week1.felt_safe === 'no',    week2.felt_safe === 'no',
+  ].filter(Boolean).length;
+
+  let status = 'OK';
+  let riskLevel = 'stable';
+
+  if (
+    avgMood <= 3 || avgStress >= 8 || crisisFlags >= 2 ||
+    (week1.overwhelmed === 'yes' && week2.overwhelmed === 'yes') ||
+    (week1.felt_safe === 'no' && week2.felt_safe === 'no')
+  ) {
+    status = 'NEEDS IMMEDIATE ATTENTION';
+    riskLevel = 'urgent';
+  } else if (
+    avgMood <= 5 || avgStress >= 6 || crisisFlags >= 1 ||
+    avgSleep <= 4 || avgAcad >= 7
+  ) {
+    status = 'NEEDS MONITORING';
+    riskLevel = 'attention';
+  }
+
+  const moodTrend    = (week2.mood_rating    || 5) - (week1.mood_rating    || 5);
+  const stressTrend  = (week2.stress_level   || 5) - (week1.stress_level   || 5);
+  const sleepTrend   = (week2.sleep_quality  || 5) - (week1.sleep_quality  || 5);
+
+  return {
+    status, riskLevel,
+    avgMood, avgStress, avgSleep, avgAcad, avgSocial,
+    moodTrend, stressTrend, sleepTrend, crisisFlags,
+    week1, week2,
+  };
+}
+
+// ── SAVE 2-WEEK EVAL TO ADMIN TABLE ─────────────────────────
+async function save2WeekEvaluation(eval2w) {
+  if (!studentId) return;
+  const payload = {
+    student_id:     studentId,
+    evaluated_at:   new Date().toISOString(),
+    week1_checkin:  eval2w.week1.id,
+    week2_checkin:  eval2w.week2.id,
+    avg_mood:       eval2w.avgMood,
+    avg_stress:     eval2w.avgStress,
+    avg_sleep:      eval2w.avgSleep,
+    avg_academic:   eval2w.avgAcad,
+    avg_social:     eval2w.avgSocial,
+    mood_trend:     eval2w.moodTrend,
+    stress_trend:   eval2w.stressTrend,
+    sleep_trend:    eval2w.sleepTrend,
+    crisis_flags:   eval2w.crisisFlags,
+    risk_level:     eval2w.riskLevel,
+    status_label:   eval2w.status,
+  };
+
+  // Save to weekly_evaluations table (admin sees this)
+  const { error } = await supabase.from('weekly_evaluations').insert([payload]);
+  if (error) {
+    console.warn('Could not save 2-week evaluation:', error.message);
+    // Fallback: update the checkin with the evaluation flag
+    await supabase.from('checkins').update({
+      alert_status: eval2w.riskLevel,
+      eval_status:  eval2w.status,
+    }).eq('id', eval2w.week2.id);
+  }
 }
 
 // ── EMOJI SCALES ─────────────────────────────────────────────
@@ -93,8 +240,6 @@ const answers = {
   therapist_q3: null,
 };
 
-// ── CRISIS DETECTION ──────────────────────────────────────────
-// Returns true if current answers suggest the student may be in distress
 function isCrisisSignal() {
   return (
     answers.mood_rating   <= 2 ||
@@ -103,10 +248,6 @@ function isCrisisSignal() {
     answers.felt_safe     === 'no'
   );
 }
-
-// ── BUDDY COMPLETION MESSAGE ──────────────────────────────────
-// Uses free ZenQuotes API (via CORS proxy) + context-aware local messages.
-// No API key required.
 
 async function fetchWellnessQuote() {
   try {
@@ -130,16 +271,14 @@ async function getBuddyMessage(context) {
     const msgs = [
       `Hey ${userName}, it took real courage to check in today 💛 You don't have to carry this alone — your counselor can see this and is here for you. Please reach out via the Contact tab.`,
       `Thank you for showing up today, ${userName}. That matters more than you know. A counselor is available — you can message them directly from this app 💛`,
-      `${userName}, you're brave for doing this check-in 💛 Your feelings are valid, and you deserve real support. Your counselor is just one message away.`,
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   }
 
   if (isLightMode) {
     const msgs = [
-      `Just showing up counts more than you know, ${userName}. Be gentle with yourself today 🌤️`,
+      `Just showing up counts more than you know, ${userName}. Be gentle with yourself this week 🌤️`,
       `You didn't have to do this today, but you did — and that's something to be proud of, ${userName} 💛`,
-      `Even on hard days, you still checked in. That's real strength, ${userName}. Rest when you need to 🌿`,
     ];
     const local = msgs[Math.floor(Math.random() * msgs.length)];
     const quote = await fetchWellnessQuote();
@@ -148,9 +287,9 @@ async function getBuddyMessage(context) {
 
   const moodLabel = mood >= 8 ? 'a great' : mood >= 5 ? 'an okay' : 'a tough';
   const msgs = [
-    `Great work checking in today, ${userName}! 🌟 It was ${moodLabel} day, but you took the time to reflect — and that genuinely matters.`,
-    `You just invested in your own wellbeing, ${userName} — and that's something to be proud of 🎉 Keep showing up for yourself!`,
-    `Check-in done! ${mood >= 7 ? `Sounds like today had some bright spots 🌟` : `Even on harder days, noticing how you feel is a superpower 💛`} Your counselor will see this and they're rooting for you, ${userName}.`,
+    `Great work on your weekly check-in, ${userName}! 🌟 It was ${moodLabel} week, but you took the time to reflect — and that genuinely matters.`,
+    `You just invested in your own wellbeing, ${userName} — and that's something to be proud of 🎉 See you next Monday!`,
+    `Weekly check-in done! ${mood >= 7 ? `Sounds like this week had some bright spots 🌟` : `Even on harder weeks, noticing how you feel is a superpower 💛`} Your counselor will see this.`,
   ];
   const base = msgs[Math.floor(Math.random() * msgs.length)];
   const quote = await fetchWellnessQuote();
@@ -170,13 +309,14 @@ function injectGameStyles() {
     }
     @keyframes gaFadeIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
 
-    /* ── MODE PICKER ── */
+    /* ── MODE PICKER — fills all available space ── */
     .ga-mode-picker {
-      display: flex; flex-direction: column; gap: 1.4rem;
+      display: flex; flex-direction: column; gap: 1.1rem;
       animation: gaFadeIn 0.45s ease;
+      height: 100%;
     }
     .ga-mode-picker-header {
-      text-align: center; padding: 0.5rem 0 0.2rem;
+      text-align: center; padding: 0.3rem 0 0;
     }
     .ga-mode-picker-eyebrow {
       display: inline-flex; align-items: center; gap: 6px;
@@ -185,28 +325,51 @@ function injectGameStyles() {
       border-radius: 99px; padding: 3px 12px;
       font-size: 0.7rem; font-weight: 800;
       letter-spacing: 0.08em; text-transform: uppercase;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.4rem;
     }
     .ga-mode-picker-title {
       font-family: 'Quicksand', sans-serif;
-      font-size: 1.35rem; font-weight: 800;
+      font-size: 1.25rem; font-weight: 800;
       color: var(--text-primary, #132A3F);
-      margin-bottom: 0.25rem; line-height: 1.3;
+      margin-bottom: 0.2rem; line-height: 1.3;
     }
     .ga-mode-picker-sub {
-      font-size: 0.82rem; color: var(--text-muted, #8a97a8);
+      font-size: 0.8rem; color: var(--text-muted, #8a97a8);
       font-weight: 600;
+    }
+
+    /* ── WEEK BADGE ── */
+    .ga-week-badge {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0.75rem 1.1rem;
+      background: linear-gradient(135deg, rgba(249,163,37,0.12), rgba(249,211,56,0.08));
+      border: 1.5px solid rgba(249,163,37,0.25);
+      border-radius: 14px;
+    }
+    .ga-week-badge-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .ga-week-badge-text { flex: 1; }
+    .ga-week-badge-title { font-size: 0.82rem; font-weight: 800; color: var(--text-primary, #132A3F); }
+    .ga-week-badge-sub   { font-size: 0.73rem; font-weight: 600; color: var(--text-muted, #8a97a8); margin-top: 2px; }
+    .ga-week-badge-pill  {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 0.68rem; font-weight: 800;
+      background: #fff4e5; color: #c97a00; border: 1px solid #fde68a;
+    }
+    .ga-week-badge-pill.week2 {
+      background: #dcfce7; color: #16a34a; border-color: #bbf7d0;
     }
 
     /* ── FEATURED (Light check-in) ── */
     .ga-mode-featured {
       background: linear-gradient(135deg, #132A3F 0%, #1e3f5c 100%);
-      border-radius: 20px; padding: 1.3rem 1.4rem;
-      display: flex; align-items: center; gap: 1rem;
+      border-radius: 16px; padding: 1rem 1.2rem;
+      display: flex; align-items: center; gap: 0.85rem;
       cursor: pointer; transition: all 0.25s;
       border: 2px solid transparent;
       box-shadow: 0 4px 20px rgba(19,42,63,0.2);
-      position: relative; overflow: hidden;
+      position: relative; overflow: hidden; width: 100%;
+      text-align: left;
     }
     .ga-mode-featured::before {
       content: ''; position: absolute; inset: 0;
@@ -219,34 +382,33 @@ function injectGameStyles() {
       border-color: rgba(249,211,56,0.4);
     }
     .ga-mode-featured-icon {
-      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
       background: rgba(249,211,56,0.15);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem; border: 1.5px solid rgba(249,211,56,0.2);
+      font-size: 1.4rem; border: 1.5px solid rgba(249,211,56,0.2);
     }
     .ga-mode-featured-content { flex: 1; min-width: 0; }
     .ga-mode-featured-name {
-      font-size: 1rem; font-weight: 800;
+      font-size: 0.92rem; font-weight: 800;
       color: #f9d338; font-family: 'Quicksand', sans-serif;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .ga-mode-featured-desc {
-      font-size: 0.78rem; font-weight: 600;
-      color: rgba(255,255,255,0.65); line-height: 1.45;
+      font-size: 0.75rem; font-weight: 600;
+      color: rgba(255,255,255,0.65); line-height: 1.4;
     }
     .ga-mode-featured-pill {
       display: inline-flex; align-items: center; gap: 4px;
       background: rgba(239,68,68,0.25); color: #fca5a5;
       border: 1px solid rgba(239,68,68,0.35);
       border-radius: 99px; padding: 2px 10px;
-      font-size: 0.68rem; font-weight: 800;
-      margin-top: 6px;
+      font-size: 0.66rem; font-weight: 800; margin-top: 5px;
     }
     .ga-mode-featured-arrow {
-      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
       background: rgba(249,211,56,0.15);
       display: flex; align-items: center; justify-content: center;
-      color: #f9d338; font-size: 0.9rem;
+      color: #f9d338; font-size: 0.85rem;
       border: 1.5px solid rgba(249,211,56,0.2);
       transition: background 0.2s, transform 0.2s;
     }
@@ -256,25 +418,31 @@ function injectGameStyles() {
 
     /* ── SECTION LABEL ── */
     .ga-mode-section-label {
-      font-size: 0.72rem; font-weight: 800;
+      font-size: 0.7rem; font-weight: 800;
       color: var(--text-muted, #8a97a8);
       letter-spacing: 0.1em; text-transform: uppercase;
     }
 
-    /* ── MODE GRID ── */
+    /* ── MODE GRID — fills all space with large cards ── */
     .ga-mode-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
+      flex: 1;
     }
+    @media (max-width: 700px) {
+      .ga-mode-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
     .ga-mode-card {
       background: var(--surface, #fff);
       border: 2px solid var(--border, #e2e6ea);
-      border-radius: 18px; padding: 1.1rem 1rem 0.9rem;
+      border-radius: 16px; padding: 1.1rem 1rem 1rem;
       cursor: pointer; transition: all 0.22s;
-      display: flex; flex-direction: column; gap: 7px;
+      display: flex; flex-direction: column; gap: 8px;
       font-family: 'Nunito', sans-serif;
       text-align: left; position: relative; overflow: hidden;
+      min-height: 130px;
     }
     .ga-mode-card::after {
       content: ''; position: absolute;
@@ -298,8 +466,8 @@ function injectGameStyles() {
     .ga-mode-card.selected::after { transform: scaleX(1); }
 
     .ga-mode-card-icon {
-      font-size: 2rem; line-height: 1;
-      width: 44px; height: 44px; border-radius: 12px;
+      font-size: 1.8rem; line-height: 1;
+      width: 42px; height: 42px; border-radius: 12px;
       background: var(--surface-alt, #f8f9fb);
       display: flex; align-items: center; justify-content: center;
       border: 1.5px solid var(--border, #e2e6ea);
@@ -310,19 +478,19 @@ function injectGameStyles() {
       background: rgba(77,184,184,0.1); border-color: rgba(77,184,184,0.3);
     }
     .ga-mode-card-name {
-      font-size: 0.9rem; font-weight: 800;
+      font-size: 0.88rem; font-weight: 800;
       color: var(--text-primary, #132A3F); line-height: 1.2;
     }
     .ga-mode-card-desc {
-      font-size: 0.73rem; font-weight: 600;
-      color: var(--text-muted, #8a97a8); line-height: 1.45;
+      font-size: 0.71rem; font-weight: 600;
+      color: var(--text-muted, #8a97a8); line-height: 1.4;
       flex: 1;
     }
     .ga-mode-card-badge {
       display: inline-flex; align-items: center; gap: 4px;
       background: #f0fdf4; color: #16a34a;
       border-radius: 99px; padding: 2px 9px;
-      font-size: 0.67rem; font-weight: 800;
+      font-size: 0.65rem; font-weight: 800;
       border: 1px solid #bbf7d0;
       width: fit-content;
     }
@@ -331,13 +499,53 @@ function injectGameStyles() {
       border-color: rgba(77,184,184,0.25);
     }
     .ga-mode-card-badge.badge-yellow {
-      background: #fefce8; color: #a16207;
-      border-color: #fde68a;
+      background: #fefce8; color: #a16207; border-color: #fde68a;
     }
     .ga-mode-card-badge.badge-red {
-      background: #fef2f2; color: #dc2626;
-      border-color: #fecaca;
+      background: #fef2f2; color: #dc2626; border-color: #fecaca;
     }
+
+    /* ── NOT MONDAY LOCK SCREEN ── */
+    .ga-locked {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; padding: 2.5rem 1.5rem; gap: 1.2rem;
+      animation: gaFadeIn 0.4s ease;
+    }
+    .ga-locked-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #f8f9fb, #e2e6ea);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; border: 2px solid var(--border, #e2e6ea);
+    }
+    .ga-locked h2 {
+      font-size: 1.2rem; font-weight: 800;
+      color: var(--text-primary, #132A3F);
+      font-family: 'Quicksand', sans-serif;
+    }
+    .ga-locked p { font-size: 0.85rem; color: var(--text-muted, #8a97a8); font-weight: 600; max-width: 320px; line-height: 1.6; }
+    .ga-locked-next {
+      background: rgba(77,184,184,0.1);
+      border: 1.5px solid rgba(77,184,184,0.25);
+      border-radius: 14px; padding: 0.85rem 1.4rem;
+      font-size: 0.82rem; font-weight: 700;
+      color: var(--teal, #4db8b8);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ga-locked-streak {
+      background: linear-gradient(135deg, #fff4e5, #fffbea);
+      border: 1.5px solid #fde68a;
+      border-radius: 14px; padding: 0.85rem 1.4rem;
+      font-size: 0.82rem; font-weight: 700; color: #a16207;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ga-locked-week1 {
+      background: var(--surface-alt, #f8f9fb);
+      border: 1.5px solid var(--border, #e2e6ea);
+      border-radius: 14px; padding: 0.9rem 1.2rem; width: 100%; max-width: 380px;
+      text-align: left;
+    }
+    .ga-locked-week1-title { font-size: 0.78rem; font-weight: 800; color: var(--text-muted, #8a97a8); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .ga-locked-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
     /* ── CRISIS BANNER ── */
     .ga-crisis-banner {
@@ -347,18 +555,14 @@ function injectGameStyles() {
       display: flex; flex-direction: column; gap: 10px;
       animation: gaFadeIn 0.4s ease;
     }
-    .ga-crisis-banner-top {
-      display: flex; align-items: center; gap: 10px;
-    }
+    .ga-crisis-banner-top { display: flex; align-items: center; gap: 10px; }
     .ga-crisis-banner-icon { font-size: 1.8rem; flex-shrink: 0; }
     .ga-crisis-banner-title { font-size: 0.95rem; font-weight: 800; color: #991b1b; font-family:'Quicksand',sans-serif; }
     .ga-crisis-banner-body { font-size: 0.82rem; color: #7f1d1d; font-weight: 600; line-height: 1.5; }
     .ga-crisis-btn {
       display: inline-flex; align-items: center; gap: 7px;
-      background: #dc2626; color: #fff;
-      border: none; border-radius: 10px;
-      padding: 0.65rem 1.2rem;
-      font-size: 0.85rem; font-weight: 800;
+      background: #dc2626; color: #fff; border: none; border-radius: 10px;
+      padding: 0.65rem 1.2rem; font-size: 0.85rem; font-weight: 800;
       cursor: pointer; font-family: 'Nunito', sans-serif;
       transition: all 0.2s; width: fit-content;
     }
@@ -446,11 +650,9 @@ function injectGameStyles() {
     .ga-emoji-btn.selected { border-color: var(--teal,#4db8b8); background: rgba(77,184,184,0.12); box-shadow: 0 4px 16px rgba(77,184,184,0.25); transform: translateY(-3px) scale(1.07); }
     .ga-emoji-btn.selected .ga-lbl { color: var(--teal,#4db8b8); }
 
-    /* ── QUESTION LABEL ── */
     .ga-q-label { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary,#5a6272); margin-bottom: 0.65rem; display: block; }
     .ga-q-sub   { font-size: 0.75rem; color: var(--text-muted,#8a97a8); margin-bottom: 0.7rem; display: block; }
 
-    /* ── ACTIVITY CHIPS ── */
     .ga-chip-grid { display: flex; gap: 8px; flex-wrap: wrap; }
     .ga-chip {
       border: 1.5px solid var(--border,#e2e6ea);
@@ -463,7 +665,6 @@ function injectGameStyles() {
     .ga-chip:hover { border-color: var(--teal,#4db8b8); color: var(--teal,#4db8b8); }
     .ga-chip.on { background: rgba(77,184,184,0.15); border-color: var(--teal,#4db8b8); color: var(--teal,#4db8b8); font-weight: 700; }
 
-    /* ── YN BUTTONS ── */
     .ga-yn-pair { display: flex; gap: 10px; margin-bottom: 0.85rem; }
     .ga-yn-pair label { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary,#5a6272); display: block; margin-bottom: 0.3rem; }
     .ga-yn-group { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -479,7 +680,6 @@ function injectGameStyles() {
     .ga-yn-btn.yes-active { background: #dcfce7; border-color: #22c55e; color: #16a34a; }
     .ga-yn-btn.no-active  { background: #fef2f2; border-color: #ef4444; color: #dc2626; }
 
-    /* ── TEXTAREA ── */
     .ga-textarea {
       width: 100%; background: var(--input-bg,#f8f9fb);
       border: 1.5px solid var(--input-border,#e2e6ea);
@@ -490,20 +690,16 @@ function injectGameStyles() {
     }
     .ga-textarea:focus { outline: none; border-color: var(--teal,#4db8b8); box-shadow: 0 0 0 3px rgba(77,184,184,0.15); }
 
-    /* ── WORD CLOUD / BUBBLE PICKER ── */
     .ga-bubble-cloud { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; padding: 0.5rem 0; }
     .ga-bubble {
-      padding: 9px 18px; border-radius: 99px;
-      font-size: 0.82rem; font-weight: 700;
-      border: 2px solid var(--border,#e2e6ea);
-      background: var(--surface-alt,#f8f9fb);
+      padding: 9px 18px; border-radius: 99px; font-size: 0.82rem; font-weight: 700;
+      border: 2px solid var(--border,#e2e6ea); background: var(--surface-alt,#f8f9fb);
       cursor: pointer; transition: all 0.22s;
       color: var(--text-secondary,#5a6272); font-family:'Nunito',sans-serif;
     }
     .ga-bubble:hover { transform: scale(1.06); border-color: var(--teal,#4db8b8); }
     .ga-bubble.picked { background: var(--teal,#4db8b8); color:#fff; border-color:var(--teal,#4db8b8); transform:scale(1.08); box-shadow:0 4px 14px rgba(77,184,184,0.3); }
 
-    /* ── CARD FLIP ── */
     .ga-flip-deck { display: flex; flex-direction: column; gap: 10px; }
     .ga-flip-item {
       background: var(--surface-alt,#f8f9fb); border-radius: 14px;
@@ -523,7 +719,6 @@ function injectGameStyles() {
     .ga-flip-item.checked { border-color:var(--teal,#4db8b8); background:rgba(77,184,184,0.08); }
     .ga-flip-item.checked .ga-flip-check { background:var(--teal,#4db8b8); border-color:var(--teal,#4db8b8); color:#fff; }
 
-    /* ── NAV BUTTONS ── */
     .ga-nav { display:flex; gap:10px; margin-top:0.5rem; }
     .ga-btn-next {
       flex:1; padding:0.82rem; border:none; border-radius:12px;
@@ -541,7 +736,6 @@ function injectGameStyles() {
     }
     .ga-btn-back:hover { border-color:var(--teal,#4db8b8); color:var(--teal,#4db8b8); }
 
-    /* ── XP / STREAK ── */
     .ga-xp-bar-wrap {
       background:var(--surface,#fff); border-radius:14px;
       border:1.5px solid var(--border,#e2e6ea);
@@ -563,8 +757,26 @@ function injectGameStyles() {
     .ga-complete h2 { font-size:1.5rem; font-weight:800; color:var(--text-primary,#132A3F); font-family:'Quicksand',sans-serif; margin-bottom:0.5rem; }
     .ga-complete p  { font-size:0.88rem; color:var(--text-muted,#8a97a8); font-weight:600; }
     .ga-complete-xp { display:inline-block; background:linear-gradient(135deg,#f9a825,#f9d338); color:#132A3F; padding:6px 20px; border-radius:99px; font-weight:800; font-size:0.9rem; margin-top:1rem; }
+    .ga-eval-result {
+      margin-top: 1.2rem; border-radius: 16px; padding: 1.2rem 1.4rem;
+      text-align: left; border: 1.5px solid;
+    }
+    .ga-eval-result.stable    { background: #f0fdf4; border-color: #22c55e; }
+    .ga-eval-result.attention { background: #fffbea; border-color: #f9a825; }
+    .ga-eval-result.urgent    { background: #fff1f2; border-color: #ef4444; }
+    .ga-eval-result-title { font-size: 0.9rem; font-weight: 800; font-family: 'Quicksand', sans-serif; margin-bottom: 0.4rem; }
+    .ga-eval-result.stable    .ga-eval-result-title { color: #15803d; }
+    .ga-eval-result.attention .ga-eval-result-title { color: #92400e; }
+    .ga-eval-result.urgent    .ga-eval-result-title { color: #991b1b; }
+    .ga-eval-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.6rem; }
+    .ga-eval-chip {
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 0.72rem; font-weight: 800;
+    }
+    .trend-up   { background: #dcfce7; color: #16a34a; }
+    .trend-down { background: #fef2f2; color: #dc2626; }
+    .trend-flat { background: #f4f6f8; color: #8a97a8; }
 
-    /* ── BUDDY MESSAGE ── */
     .ga-buddy-msg {
       background: var(--surface, #fff);
       border: 1.5px solid var(--border, #e2e6ea);
@@ -586,12 +798,10 @@ function injectGameStyles() {
     .ga-buddy-dot:nth-child(3) { animation-delay: 0.4s; }
     @keyframes gaTyping { 0%,80%,100% { opacity:0.3; transform:scale(0.9); } 40% { opacity:1; transform:scale(1.2); } }
 
-    /* ── CONFETTI ── */
     .ga-confetti-wrap { position:relative; overflow:hidden; }
     .ga-confetti-piece { position:absolute; width:8px; height:8px; border-radius:2px; animation: gaConf 1.2s ease forwards; opacity:0; }
     @keyframes gaConf { 0% { opacity:1; transform:translateY(0) rotate(0deg); } 100% { opacity:0; transform:translateY(80px) rotate(360deg); } }
 
-    /* ── SUBMITTED BANNER ── */
     .ga-submitted-banner {
       background: linear-gradient(135deg, #f0fdf4, #dcfce7);
       border: 1.5px solid #22c55e; border-radius: 16px;
@@ -622,6 +832,12 @@ function injectGameStyles() {
     [data-theme="dark"] .ga-light-card p  { color:#7dd3fc; }
     [data-theme="dark"] .ga-crisis-banner { background:#2d1414; border-color:#991b1b; }
     [data-theme="dark"] .ga-buddy-msg     { background:#1a2535; border-color:#2d3748; }
+    [data-theme="dark"] .ga-locked        { }
+    [data-theme="dark"] .ga-locked-icon   { background:#1e2d3d; border-color:#2d3748; }
+    [data-theme="dark"] .ga-locked-next   { background:rgba(77,184,184,0.08); }
+    [data-theme="dark"] .ga-locked-streak { background:#1e2535; border-color:#fde68a; }
+    [data-theme="dark"] .ga-locked-week1  { background:#1a2535; border-color:#2d3748; }
+    [data-theme="dark"] .ga-week-badge    { background:rgba(249,163,37,0.08); border-color:rgba(249,163,37,0.2); }
   `;
   document.head.appendChild(s);
 }
@@ -677,94 +893,65 @@ function bindYN(container) {
   });
 }
 
-async function getStreak() {
+async function getWeeklyStreak() {
   if (!studentId) return { streak: 0, xp: 0 };
   const { data } = await supabase
     .from('checkins').select('submitted_at')
     .eq('student_id', studentId)
     .order('submitted_at', { ascending: false })
-    .limit(30);
+    .limit(20);
   if (!data?.length) return { streak: 0, xp: 0 };
-  const dates = [...new Set(data.map(c => c.submitted_at.slice(0,10)))].sort().reverse();
+
+  // Group by week
+  const weeks = [...new Set(data.map(c => getMondayOf(new Date(c.submitted_at))))].sort().reverse();
   let streak = 0;
-  for (let i = 0; i < dates.length; i++) {
-    const expected = new Date();
-    expected.setDate(expected.getDate() - (i + 1));
-    if (dates[i] === expected.toISOString().slice(0,10)) streak++;
+  for (let i = 0; i < weeks.length; i++) {
+    const expectedWeeks = weeksAgo(weeks[i]);
+    if (expectedWeeks === i + 1) streak++;
     else break;
   }
-  return { streak, xp: Math.min(streak * 20, 100) };
+  return { streak, xp: Math.min(streak * 25, 100) };
 }
 
 // ── MODE DEFINITIONS ──────────────────────────────────────────
 const MODE_DEFS = [
-  {
-    id: 0,
-    label: 'Emoji Mode',
-    icon: '😊',
-    desc: 'Pick emojis to express how you feel. Quick and visual.',
-    badge: '~2 min',
-    badgeClass: 'badge-teal',
-  },
-  {
-    id: 1,
-    label: 'Word Cloud',
-    icon: '🫧',
-    desc: 'Tap feeling-words that match your day. Great if you\'re unsure how to explain.',
-    badge: '~3 min',
-    badgeClass: 'badge-teal',
-  },
-  {
-    id: 2,
-    label: 'Win Tracker',
-    icon: '🏆',
-    desc: 'Check off small victories from your day. Every win counts!',
-    badge: '~3 min',
-    badgeClass: 'badge-yellow',
-  },
-  {
-    id: 3,
-    label: 'Story Mode',
-    icon: '📖',
-    desc: 'Describe your day through short narrative prompts.',
-    badge: '~4 min',
-    badgeClass: 'badge-yellow',
-  },
-  {
-    id: 4,
-    label: 'Quick-fire',
-    icon: '⚡',
-    desc: 'Fast gut-check answers. Ideal when you\'re short on time.',
-    badge: '~1 min',
-    badgeClass: '',
-  },
-  {
-    id: 'light',
-    label: 'Light Check-in',
-    icon: '🌤️',
-    desc: 'Just 3 questions. Choose this on harder days — showing up still counts.',
-    badge: 'For tough days',
-    badgeClass: 'badge-red',
-  },
+  { id: 0, label: 'Emoji Mode',   icon: '😊', desc: 'Pick emojis to express how you feel. Quick and visual.',        badge: '~3 min', badgeClass: 'badge-teal' },
+  { id: 1, label: 'Word Cloud',   icon: '🫧', desc: 'Tap feeling-words that match your week. Great if unsure.',      badge: '~4 min', badgeClass: 'badge-teal' },
+  { id: 2, label: 'Win Tracker',  icon: '🏆', desc: 'Check off small victories from this week. Every win counts!',  badge: '~3 min', badgeClass: 'badge-yellow' },
+  { id: 3, label: 'Story Mode',   icon: '📖', desc: 'Describe your week through short narrative prompts.',           badge: '~5 min', badgeClass: 'badge-yellow' },
+  { id: 4, label: 'Quick-fire',   icon: '⚡', desc: 'Fast gut-check answers. Ideal when you\'re short on time.',    badge: '~2 min', badgeClass: '' },
+  { id: 'light', label: 'Light Check-in', icon: '🌤️', desc: 'Just 3 questions. For harder days — showing up still counts.', badge: 'Tough week?', badgeClass: 'badge-red' },
 ];
 
-// ── MODE PICKER SCREEN ────────────────────────────────────────
-function renderModePicker(container, onSelect) {
-  // Separate light mode from the regular modes
+// ── MODE PICKER (full-space) ──────────────────────────────────
+function renderModePicker(container, weekInfo, onSelect) {
+  const { weekNumber, prevCheckin } = weekInfo; // weekNumber: 1 or 2
+  const isWeek2 = weekNumber === 2;
   const regularModes = MODE_DEFS.filter(m => m.id !== 'light');
   const lightMode    = MODE_DEFS.find(m => m.id === 'light');
 
   container.innerHTML = `
     <div class="ga-mode-picker">
       <div class="ga-mode-picker-header">
-        <div class="ga-mode-picker-eyebrow">✨ Daily Check-in</div>
-        <div class="ga-mode-picker-title">How do you want to check in today?</div>
-        <div class="ga-mode-picker-sub">Pick whatever feels right — you can choose a different style tomorrow.</div>
+        <div class="ga-mode-picker-eyebrow">📅 Weekly Assessment</div>
+        <div class="ga-mode-picker-title">How do you want to check in this week?</div>
+        <div class="ga-mode-picker-sub">Pick whatever feels right — your answers help your counselor support you.</div>
       </div>
 
-      <!-- Regular modes grid -->
+      <div class="ga-week-badge">
+        <div class="ga-week-badge-icon">${isWeek2 ? '✅' : '📝'}</div>
+        <div class="ga-week-badge-text">
+          <div class="ga-week-badge-title">${isWeek2 ? 'Week 2 — Final Evaluation' : 'Week 1 — First Check-in'}</div>
+          <div class="ga-week-badge-sub">${isWeek2
+            ? 'This week\'s result will be combined with last week\'s for your 2-week evaluation.'
+            : 'Complete again next Monday for a full 2-week wellbeing picture.'
+          }</div>
+        </div>
+        <div class="ga-week-badge-pill ${isWeek2 ? 'week2' : ''}">${isWeek2 ? '🔔 Evaluation' : '📊 Week 1'}</div>
+      </div>
+
       <div>
-        <div class="ga-mode-section-label" style="margin-bottom:0.6rem;">Choose your style</div>
+        <div class="ga-mode-section-label" style="margin-bottom:0.55rem;">Choose your style</div>
         <div class="ga-mode-grid">
           ${regularModes.map(m => `
             <button type="button" class="ga-mode-card" data-mode="${m.id}">
@@ -776,22 +963,20 @@ function renderModePicker(container, onSelect) {
         </div>
       </div>
 
-      <!-- Light mode featured card -->
       <div>
-        <div class="ga-mode-section-label" style="margin-bottom:0.6rem;">Having a tough day?</div>
+        <div class="ga-mode-section-label" style="margin-bottom:0.55rem;">Having a tough week?</div>
         <button type="button" class="ga-mode-featured" data-mode="light">
           <div class="ga-mode-featured-icon">${lightMode.icon}</div>
           <div class="ga-mode-featured-content">
             <div class="ga-mode-featured-name">${lightMode.label}</div>
             <div class="ga-mode-featured-desc">${lightMode.desc}</div>
-            <div class="ga-mode-featured-pill">💛 For tough days</div>
+            <div class="ga-mode-featured-pill">💛 For tough weeks</div>
           </div>
           <div class="ga-mode-featured-arrow">→</div>
         </button>
       </div>
     </div>`;
 
-  // Bind all cards (regular + featured)
   container.querySelectorAll('.ga-mode-card, .ga-mode-featured').forEach(card => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.ga-mode-card').forEach(c => c.classList.remove('selected'));
@@ -802,8 +987,50 @@ function renderModePicker(container, onSelect) {
   });
 }
 
-// ── LIGHT MODE (short check-in for hard days) ─────────────────
-function renderLightMode(container, { streak, xp }) {
+// ── NOT MONDAY SCREEN ─────────────────────────────────────────
+async function renderNotMonday(container, thisWeekSubmission) {
+  const { streak } = await getWeeklyStreak();
+  const nextMonday = getNextMonday();
+
+  let weekInfo = '';
+  if (thisWeekSubmission) {
+    const mood   = thisWeekSubmission.mood_rating ?? 5;
+    const stress = thisWeekSubmission.stress_level ?? 5;
+    const color  = mood >= 7 ? '#22c55e' : mood >= 5 ? '#f9a825' : '#ef4444';
+    weekInfo = `
+      <div class="ga-locked-week1">
+        <div class="ga-locked-week1-title">This week's check-in ✓</div>
+        <div class="ga-locked-chips">
+          <span class="ga-eval-chip" style="background:${color}22;color:${color};">Mood: ${mood}/10</span>
+          <span class="ga-eval-chip" style="background:#fef2f2;color:#dc2626;">Stress: ${stress}/10</span>
+          ${thisWeekSubmission.overwhelmed === 'yes' ? '<span class="ga-eval-chip" style="background:#fef2f2;color:#dc2626;">⚠️ Overwhelmed</span>' : ''}
+          ${thisWeekSubmission.felt_safe === 'no' ? '<span class="ga-eval-chip" style="background:#fef2f2;color:#dc2626;">⚠️ Felt unsafe</span>' : '<span class="ga-eval-chip" style="background:#dcfce7;color:#16a34a;">✓ Felt safe</span>'}
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div class="ga-locked">
+      <div class="ga-locked-icon">📅</div>
+      <h2>${thisWeekSubmission ? 'See you next Monday!' : 'Check-ins open on Mondays'}</h2>
+      <p>${thisWeekSubmission
+        ? 'You\'ve already completed this week\'s assessment. Great job! Come back every Monday to keep your streak going.'
+        : 'Weekly assessments open every Monday. Your answers help your counselor understand how you\'re doing over time.'
+      }</p>
+      <div class="ga-locked-next">
+        <i class="fa-solid fa-calendar" style="font-size:1rem;"></i>
+        <span>Next check-in opens: <strong>${nextMonday}</strong></span>
+      </div>
+      ${streak > 0 ? `
+        <div class="ga-locked-streak">
+          🔥 <span>You have a <strong>${streak}-week</strong> streak! Keep it up.</span>
+        </div>` : ''}
+      ${weekInfo}
+    </div>`;
+}
+
+// ── LIGHT MODE ────────────────────────────────────────────────
+function renderLightMode(container, { streak, xp }, weekInfo) {
   const name = sessionStorage.getItem('userName')?.split(' ')[0] || 'there';
 
   container.innerHTML = `
@@ -811,21 +1038,21 @@ function renderLightMode(container, { streak, xp }) {
       <div class="ga-xp-bar-wrap">
         <div class="ga-xp-icon">🔥</div>
         <div class="ga-xp-info">
-          <div class="ga-xp-label">Streak XP</div>
+          <div class="ga-xp-label">Weekly Streak</div>
           <div class="ga-xp-track"><div class="ga-xp-fill" style="width:${xp}%"></div></div>
         </div>
-        <div class="ga-streak">${streak} day${streak !== 1 ? 's' : ''} <span>streak</span></div>
+        <div class="ga-streak">${streak} week${streak !== 1 ? 's' : ''} <span>streak</span></div>
       </div>
 
       <div class="ga-light-card">
         <h3>🌤️ Light Check-in — you're doing great just by being here</h3>
-        <p>Hey ${name}, just three questions today. No pressure, no judgment.</p>
+        <p>Hey ${name}, just three questions this week. No pressure, no judgment.</p>
 
         <div style="display:flex;flex-direction:column;gap:1.1rem;">
-          ${emojiPicker(MOODS, 'mood_rating', 'How are you feeling right now?', null)}
+          ${emojiPicker(MOODS, 'mood_rating', 'How has your overall mood been this week?', null)}
 
           <div class="ga-yn-group">
-            <label style="font-size:0.82rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;display:block;">Did you feel safe today?</label>
+            <label style="font-size:0.82rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;display:block;">Did you feel safe this week?</label>
             <div class="ga-yn-pair">
               <button type="button" class="ga-yn-btn" data-yn-key="felt_safe" data-yn-val="yes">✓ Yes</button>
               <button type="button" class="ga-yn-btn" data-yn-key="felt_safe" data-yn-val="no">✗ No</button>
@@ -845,7 +1072,7 @@ function renderLightMode(container, { streak, xp }) {
           <div class="ga-crisis-banner-title">You're not alone — a counselor is here for you</div>
         </div>
         <div class="ga-crisis-banner-body">
-          It sounds like today has been really tough. You don't have to carry this by yourself. 
+          It sounds like this week has been really tough. You don't have to carry this by yourself.
           Your school counselor can see your check-in and is ready to support you.
         </div>
         <button class="ga-crisis-btn" onclick="window.location.href='3studentcontact.html'">
@@ -864,7 +1091,6 @@ function renderLightMode(container, { streak, xp }) {
   bindEmojiPicker(container, 'mood_rating');
   bindYN(container);
 
-  // Show crisis banner if mood is really low or felt unsafe
   const checkCrisis = () => {
     const showBanner = answers.mood_rating <= 2 || answers.felt_safe === 'no';
     document.getElementById('gaCrisisBanner').style.display = showBanner ? 'flex' : 'none';
@@ -884,12 +1110,11 @@ function renderLightMode(container, { streak, xp }) {
 
   document.getElementById('gaLightSubmit').addEventListener('click', async () => {
     answers.notes = document.getElementById('gaLightNotes')?.value?.trim() || null;
-    // Fill in safe defaults for unanswered fields
     answers.stress_level = answers.stress_level || 5;
     answers.sleep_quality = answers.sleep_quality || 5;
     answers.academic_pressure = answers.academic_pressure || 5;
     answers.social_wellbeing = answers.social_wellbeing || 5;
-    await submit(container, true);
+    await submit(container, true, weekInfo);
   });
 }
 
@@ -902,25 +1127,24 @@ function buildSteps(mode) {
   return stepsQuickFire();
 }
 
-// MODE 0: Classic emoji selectors
 function stepsEmojiFirst() {
   return [
     {
-      title: 'How are you feeling?',
+      title: 'How did this week feel?',
       icon: '💭',
-      hint: 'Pick the emoji that matches your mood right now',
+      hint: 'Pick the emoji that best matches your overall mood this week',
       html: () => `
-        ${emojiPicker(MOODS, 'mood_rating', 'Overall Mood', null)}
-        ${emojiPicker(STRESS, 'stress_level', 'Stress Level', null)}`,
+        ${emojiPicker(MOODS, 'mood_rating', 'Overall Mood This Week', null)}
+        ${emojiPicker(STRESS, 'stress_level', 'Stress Level This Week', null)}`,
       bind: (c) => { bindEmojiPicker(c,'mood_rating'); bindEmojiPicker(c,'stress_level'); },
     },
     {
       title: 'Mind & Body',
       icon: '🌙',
-      hint: 'How did your body do today?',
+      hint: 'How did your body hold up this week?',
       html: () => `
-        ${emojiPicker(SLEEP, 'sleep_quality', 'Sleep Quality', 'How well did you sleep last night?')}
-        ${emojiPicker(SOCIAL, 'social_wellbeing', 'Social Wellbeing', 'How connected did you feel today?')}`,
+        ${emojiPicker(SLEEP, 'sleep_quality', 'Sleep Quality (average this week)', 'How well did you sleep overall?')}
+        ${emojiPicker(SOCIAL, 'social_wellbeing', 'Social Wellbeing', 'How connected did you feel this week?')}`,
       bind: (c) => { bindEmojiPicker(c,'sleep_quality'); bindEmojiPicker(c,'social_wellbeing'); },
     },
     {
@@ -928,21 +1152,21 @@ function stepsEmojiFirst() {
       icon: '📚',
       hint: 'Academic pressure and quick yes/no',
       html: () => `
-        ${emojiPicker(ACADEMIC,'academic_pressure','Academic Pressure','How heavy was the workload?')}
+        ${emojiPicker(ACADEMIC,'academic_pressure','Academic Pressure This Week','How heavy was the workload overall?')}
         <div style="margin-top:1rem;">
-          ${ynRow('Did you eat regular meals today?','ate_meals')}
-          ${ynRow('Did you feel safe today?','felt_safe')}
+          ${ynRow('Did you eat regular meals most days?','ate_meals')}
+          ${ynRow('Did you feel safe this week?','felt_safe')}
           ${ynRow('Are you feeling overwhelmed right now?','overwhelmed')}
         </div>`,
       bind: (c) => { bindEmojiPicker(c,'academic_pressure'); bindYN(c); },
     },
     {
-      title: 'What helped today?',
+      title: 'What helped this week?',
       icon: '✨',
       hint: 'Tap everything you did (multi-select)',
       html: () => `
         <div class="ga-chip-grid" id="activityChips">
-          ${['🏃 Exercise','📓 Journaling','🎵 Music','📚 Reading','🧘 Meditation','🎨 Art/Creative','💬 Talked to someone','🌿 Time outside','🎮 Gaming','🍳 Cooked something','😴 Napped'].map(a =>
+          ${['🏃 Exercise','📓 Journaling','🎵 Music','📚 Reading','🧘 Meditation','🎨 Art/Creative','💬 Talked to someone','🌿 Time outside','🎮 Gaming','🍳 Cooked something','😴 Napped','🤝 Connected with friends'].map(a =>
             `<button type="button" class="ga-chip" data-act="${a}">${a}</button>`
           ).join('')}
         </div>
@@ -963,14 +1187,13 @@ function stepsEmojiFirst() {
   ];
 }
 
-// MODE 1: Bubble cloud word-picker
 function stepsBubbleCloud() {
   const feelingWords = ['Anxious','Tired','Hopeful','Stressed','Calm','Happy','Lonely','Motivated','Sad','Excited','Overwhelmed','Okay','Grateful','Numb','Focused','Burned out','Content','Irritable','Confident','Lost'];
   const copingWords  = ['Deep breaths','Called a friend','Listened to music','Went for a walk','Journaled','Watched something','Cried it out','Napped','Meditated','Just kept going','Ate comfort food','Talked to family'];
 
   return [
     {
-      title: 'What words describe your day?',
+      title: 'What words describe your week?',
       icon: '🫧',
       hint: 'Tap all that apply — no judgment!',
       html: () => `
@@ -990,15 +1213,15 @@ function stepsBubbleCloud() {
         const negCount = picked.filter(w=>negWords.includes(w)).length;
         const posCount = picked.filter(w=>posWords.includes(w)).length;
         answers.mood_rating = Math.max(1, Math.min(10, 5 + posCount - negCount));
-        answers.notes = picked.length ? 'Feelings: ' + picked.join(', ') : null;
+        answers.notes = picked.length ? 'Week feelings: ' + picked.join(', ') : null;
       },
     },
     {
       title: 'Rate the big stuff',
       icon: '📊',
-      hint: 'Quick emoji checks',
+      hint: 'Quick emoji checks for your week',
       html: () => `
-        ${emojiPicker(STRESS,'stress_level','Stress Today',null)}
+        ${emojiPicker(STRESS,'stress_level','Stress This Week',null)}
         ${emojiPicker(SLEEP,'sleep_quality','Sleep Quality',null)}
         ${emojiPicker(ACADEMIC,'academic_pressure','Academic Load',null)}`,
       bind: (c) => { bindEmojiPicker(c,'stress_level'); bindEmojiPicker(c,'sleep_quality'); bindEmojiPicker(c,'academic_pressure'); },
@@ -1006,7 +1229,7 @@ function stepsBubbleCloud() {
     {
       title: 'How did you cope?',
       icon: '🛡️',
-      hint: 'What helped you get through today?',
+      hint: 'What helped you get through this week?',
       html: () => `
         <div class="ga-bubble-cloud" id="copeBubbles">
           ${copingWords.map(w=>`<button type="button" class="ga-bubble" data-word="${w}">${w}</button>`).join('')}
@@ -1022,14 +1245,14 @@ function stepsBubbleCloud() {
       },
     },
     {
-      title: 'Quick check-in',
+      title: 'Weekly safety check',
       icon: '✅',
-      hint: 'A few yes/no questions',
+      hint: 'A few yes/no questions about your week',
       html: () => `
-        ${ynRow('Did you eat today?','ate_meals')}
-        ${ynRow('Did you get enough sleep?','slept_enough')}
+        ${ynRow('Did you eat regularly this week?','ate_meals')}
+        ${ynRow('Did you get enough sleep most nights?','slept_enough')}
         ${ynRow('Did you connect with someone?','connected')}
-        ${ynRow('Feeling overwhelmed?','overwhelmed')}
+        ${ynRow('Feeling overwhelmed right now?','overwhelmed')}
         <div style="margin-top:1rem;">
           <label class="ga-q-label">Anything you want your counselor to know? <span style="color:var(--text-muted);font-weight:500;">(optional)</span></label>
           <textarea class="ga-textarea" id="gaNotes" rows="3" placeholder="You don't have to share, but you can..."></textarea>
@@ -1043,28 +1266,27 @@ function stepsBubbleCloud() {
   ];
 }
 
-// MODE 2: Checklist / card-flip style
 function stepsCardFlip() {
   const WIN_ITEMS = [
     { icon:'📝', text:'Finished an assignment or task' },
     { icon:'💬', text:'Had a real conversation with someone' },
     { icon:'🌅', text:'Got out of bed despite not wanting to' },
-    { icon:'🍽️', text:'Ate at least one proper meal' },
+    { icon:'🍽️', text:'Ate proper meals most days' },
     { icon:'🚶', text:'Moved your body in some way' },
     { icon:'💧', text:'Stayed hydrated' },
     { icon:'📵', text:'Had screen-free time' },
     { icon:'😤', text:'Handled something stressful' },
-    { icon:'💤', text:'Got to sleep at a decent time' },
-    { icon:'🧹', text:'Did something around the house' },
+    { icon:'💤', text:'Maintained a decent sleep schedule' },
+    { icon:'🧹', text:'Kept your space tidy' },
     { icon:'🎯', text:'Stayed focused for a study session' },
     { icon:'🌿', text:'Spent time outside' },
   ];
 
   return [
     {
-      title: "Today's Wins",
+      title: "This Week's Wins",
       icon: '🏆',
-      hint: 'Check off everything you did today — even the small stuff counts!',
+      hint: 'Check off everything you did this week — even the small stuff counts!',
       html: () => `
         <div class="ga-flip-deck" id="winDeck">
           ${WIN_ITEMS.map((it,i)=>`
@@ -1089,30 +1311,30 @@ function stepsCardFlip() {
     {
       title: 'Quick Ratings',
       icon: '⚡',
-      hint: 'Emoji-quick answers',
+      hint: 'Emoji-quick answers for this week',
       html: () => `
-        ${emojiPicker(STRESS,'stress_level','Stress Level',null)}
-        ${emojiPicker(SLEEP,'sleep_quality','Sleep Last Night',null)}`,
+        ${emojiPicker(STRESS,'stress_level','Stress Level This Week',null)}
+        ${emojiPicker(SLEEP,'sleep_quality','Sleep Quality This Week',null)}`,
       bind: (c) => { bindEmojiPicker(c,'stress_level'); bindEmojiPicker(c,'sleep_quality'); },
     },
     {
-      title: 'Safety Check',
+      title: 'Weekly Safety Check',
       icon: '🛡️',
       hint: 'These help your counselor support you better',
       html: () => `
-        ${ynRow('Did you feel safe today?','felt_safe')}
-        ${ynRow('Did you eat today?','ate_meals')}
+        ${ynRow('Did you feel safe this week?','felt_safe')}
+        ${ynRow('Did you eat regularly?','ate_meals')}
         ${ynRow('Did you connect with anyone?','connected')}
         ${ynRow('Feeling overwhelmed?','overwhelmed')}
         ${emojiPicker(SOCIAL,'social_wellbeing','How connected did you feel?',null)}`,
       bind: (c) => { bindYN(c); bindEmojiPicker(c,'social_wellbeing'); },
     },
     {
-      title: 'One thing',
+      title: 'Reflect on your week',
       icon: '💬',
       hint: 'Optional but really helpful for your counselor',
       html: () => `
-        <label class="ga-q-label">What felt heaviest today?</label>
+        <label class="ga-q-label">What felt heaviest this week?</label>
         <textarea class="ga-textarea" id="gaQ1" rows="3" placeholder="You can be honest here..."></textarea>
         <label class="ga-q-label" style="margin-top:1rem;">What's one thing that helped, even a little?</label>
         <textarea class="ga-textarea" id="gaQ2" rows="3" placeholder="Even tiny things count..."></textarea>`,
@@ -1125,23 +1347,22 @@ function stepsCardFlip() {
   ];
 }
 
-// MODE 3: Story / narrative mode
 function stepsStoryMode() {
   const name = sessionStorage.getItem('userName')?.split(' ')[0] || 'there';
   return [
     {
-      title: `Hey ${name}, tell me about your day`,
+      title: `Hey ${name}, tell me about your week`,
       icon: '📖',
       hint: 'Pick the sentence that fits best',
       html: () => `
-        <span class="ga-q-sub">Tap the one that sounds most like your day</span>
+        <span class="ga-q-sub">Tap the one that sounds most like your week</span>
         <div class="ga-flip-deck" id="storyPick">
           ${[
-            { icon:'🌟', text:'Today was honestly pretty good. I felt on top of things.', mood:8, stress:3 },
-            { icon:'😐', text:'It was just an ordinary day — not great, not terrible.', mood:5, stress:5 },
-            { icon:'🌧️', text:"Today was rough. I was struggling more than usual.", mood:3, stress:7 },
-            { icon:'🎢', text:"It was a rollercoaster — good moments and rough ones.", mood:5, stress:6 },
-            { icon:'😶', text:"I'm not even sure how today was. I just got through it.", mood:4, stress:6 },
+            { icon:'🌟', text:'This week was honestly pretty good. I felt on top of things.', mood:8, stress:3 },
+            { icon:'😐', text:'It was just an ordinary week — not great, not terrible.', mood:5, stress:5 },
+            { icon:'🌧️', text:"This week was rough. I was struggling more than usual.", mood:3, stress:7 },
+            { icon:'🎢', text:"It was a rollercoaster — good days and rough days.", mood:5, stress:6 },
+            { icon:'😶', text:"I'm not even sure how this week was. I just got through it.", mood:4, stress:6 },
           ].map((it,i)=>`
             <div class="ga-flip-item" data-idx="${i}" data-mood="${it.mood}" data-stress="${it.stress}">
               <span class="ga-flip-icon">${it.icon}</span>
@@ -1165,7 +1386,7 @@ function stepsStoryMode() {
       icon: '🔍',
       hint: "Let's fill in a bit more",
       html: () => `
-        ${emojiPicker(SLEEP,'sleep_quality','Sleep last night?',null)}
+        ${emojiPicker(SLEEP,'sleep_quality','Sleep this week?',null)}
         ${emojiPicker(ACADEMIC,'academic_pressure','How heavy was school?',null)}
         ${emojiPicker(SOCIAL,'social_wellbeing','How connected did you feel?',null)}`,
       bind: (c) => { bindEmojiPicker(c,'sleep_quality'); bindEmojiPicker(c,'academic_pressure'); bindEmojiPicker(c,'social_wellbeing'); },
@@ -1175,7 +1396,7 @@ function stepsStoryMode() {
       icon: '💛',
       hint: 'Just a few yes/no questions',
       html: () => `
-        ${ynRow('Did you eat today?','ate_meals')}
+        ${ynRow('Did you eat regularly this week?','ate_meals')}
         ${ynRow('Did you feel safe?','felt_safe')}
         ${ynRow('Did you get enough sleep?','slept_enough')}
         ${ynRow('Feeling overwhelmed right now?','overwhelmed')}`,
@@ -1186,31 +1407,30 @@ function stepsStoryMode() {
       icon: '✍️',
       hint: 'Write as much or as little as you want',
       html: () => `
-        <label class="ga-q-label">If today were a chapter in a book, what would the title be?</label>
-        <textarea class="ga-textarea" id="gaStoryTitle" rows="2" placeholder='e.g. "The Day I Almost Gave Up But Didn\'t"'></textarea>
-        <label class="ga-q-label" style="margin-top:1rem;">What do you hope tomorrow's chapter looks like?</label>
+        <label class="ga-q-label">If this week were a chapter in a book, what would the title be?</label>
+        <textarea class="ga-textarea" id="gaStoryTitle" rows="2" placeholder='e.g. "The Week I Almost Gave Up But Didn\'t"'></textarea>
+        <label class="ga-q-label" style="margin-top:1rem;">What do you hope next week's chapter looks like?</label>
         <textarea class="ga-textarea" id="gaStorytomorrow" rows="3" placeholder="It can be a small wish or a big one..."></textarea>`,
       bind: () => {},
       collect: (c) => {
         const t1 = c.querySelector('#gaStoryTitle')?.value?.trim();
         const t2 = c.querySelector('#gaStorytomorrow')?.value?.trim();
-        answers.notes        = t1 ? `Today: "${t1}"` : null;
+        answers.notes        = t1 ? `This week: "${t1}"` : null;
         answers.therapist_q3 = t2 || null;
       },
     },
   ];
 }
 
-// MODE 4: Quick-fire speed round
 function stepsQuickFire() {
   return [
     {
       title: '⚡ Quick-fire round!',
       icon: '🎯',
-      hint: 'Fast answers, no overthinking — just go with your gut!',
+      hint: 'Fast answers about your week — just go with your gut!',
       html: () => `
-        ${emojiPicker(MOODS,'mood_rating','Mood right now?',null)}
-        ${emojiPicker(STRESS,'stress_level','Stress level?',null)}`,
+        ${emojiPicker(MOODS,'mood_rating','Overall mood this week?',null)}
+        ${emojiPicker(STRESS,'stress_level','Stress level this week?',null)}`,
       bind: (c) => { bindEmojiPicker(c,'mood_rating'); bindEmojiPicker(c,'stress_level'); },
     },
     {
@@ -1218,7 +1438,7 @@ function stepsQuickFire() {
       icon: '🚀',
       hint: 'Keep going, almost there!',
       html: () => `
-        ${emojiPicker(SLEEP,'sleep_quality','Sleep quality?',null)}
+        ${emojiPicker(SLEEP,'sleep_quality','Sleep quality this week?',null)}
         ${emojiPicker(ACADEMIC,'academic_pressure','School pressure?',null)}
         ${emojiPicker(SOCIAL,'social_wellbeing','Social vibes?',null)}`,
       bind: (c) => { bindEmojiPicker(c,'sleep_quality'); bindEmojiPicker(c,'academic_pressure'); bindEmojiPicker(c,'social_wellbeing'); },
@@ -1228,9 +1448,9 @@ function stepsQuickFire() {
       icon: '🏁',
       hint: "Speed round — just tap your answer!",
       html: () => `
-        ${ynRow('Ate today?','ate_meals')}
+        ${ynRow('Ate regularly this week?','ate_meals')}
         ${ynRow('Slept enough?','slept_enough')}
-        ${ynRow('Felt safe?','felt_safe')}
+        ${ynRow('Felt safe this week?','felt_safe')}
         ${ynRow('Connected with someone?','connected')}
         ${ynRow('Overwhelmed right now?','overwhelmed')}`,
       bind: (c) => { bindYN(c); },
@@ -1240,7 +1460,7 @@ function stepsQuickFire() {
       icon: '🎉',
       hint: 'Optional — share if you want',
       html: () => `
-        <label class="ga-q-label">What activities helped you today? (tap all that apply)</label>
+        <label class="ga-q-label">What activities helped you this week? (tap all that apply)</label>
         <div class="ga-chip-grid" id="activityChips" style="margin-bottom:1.2rem;">
           ${['🏃 Exercise','📓 Journaling','🎵 Music','📚 Reading','🧘 Meditation','🎨 Art','💬 Talked it out','🌿 Outdoors','🎮 Gaming','😴 Rested'].map(a=>
             `<button type="button" class="ga-chip" data-act="${a}">${a}</button>`
@@ -1260,7 +1480,7 @@ function stepsQuickFire() {
 }
 
 // ── STEP RUNNER ───────────────────────────────────────────────
-function runSteps(container, mode, { streak, xp }) {
+function runSteps(container, mode, { streak, xp }, weekInfo) {
   const steps = buildSteps(mode);
   const modeDef = MODE_DEFS.find(m => m.id === mode) || MODE_DEFS[0];
   let currentStep = 0;
@@ -1282,10 +1502,10 @@ function runSteps(container, mode, { streak, xp }) {
         <div class="ga-xp-bar-wrap">
           <div class="ga-xp-icon">🔥</div>
           <div class="ga-xp-info">
-            <div class="ga-xp-label">Streak XP</div>
+            <div class="ga-xp-label">Weekly Streak</div>
             <div class="ga-xp-track"><div class="ga-xp-fill" style="width:${xp}%"></div></div>
           </div>
-          <div class="ga-streak">${streak} day${streak !== 1 ? 's' : ''} <span>streak</span></div>
+          <div class="ga-streak">${streak} week${streak !== 1 ? 's' : ''} <span>streak</span></div>
         </div>
 
         <div class="ga-progress-bar-wrap"><div class="ga-progress-bar" style="width:${progress}%"></div></div>
@@ -1316,7 +1536,7 @@ function runSteps(container, mode, { streak, xp }) {
 
     document.getElementById('gaBack').addEventListener('click', () => {
       if (currentStep === 0) {
-        renderAssessment(container); // go back to mode picker
+        renderAssessment(container);
       } else {
         currentStep--;
         render();
@@ -1327,7 +1547,7 @@ function runSteps(container, mode, { streak, xp }) {
     document.getElementById('gaNext').addEventListener('click', async () => {
       if (step.collect) step.collect(body);
       if (isLast) {
-        await submit(container, false);
+        await submit(container, false, weekInfo);
       } else {
         currentStep++;
         render();
@@ -1343,36 +1563,57 @@ function runSteps(container, mode, { streak, xp }) {
 async function renderAssessment(container) {
   injectGameStyles();
 
-  // Already submitted?
-  const done = await checkAlreadySubmitted();
-  if (done) {
-    container.innerHTML = `
-      <div class="ga-submitted-banner">
-        <div class="ga-sub-icon">🎉</div>
-        <h3>You're all done for today!</h3>
-        <p>Your check-in is saved. Come back tomorrow — Buddy will be waiting 💛</p>
-      </div>`;
+  const monday = isMonday();
+
+  // Check this week's submission
+  const thisWeekSubmission = await checkThisWeekSubmission();
+
+  // If already submitted this week, show locked screen
+  if (thisWeekSubmission) {
+    await renderNotMonday(container, thisWeekSubmission);
     return;
   }
 
-  const { streak, xp } = await getStreak();
+  // If not Monday, show locked screen (no submission yet this week)
+  if (!monday) {
+    await renderNotMonday(container, null);
+    return;
+  }
 
-  // Show mode picker — let the student choose
-  renderModePicker(container, (selectedMode) => {
+  // It's Monday and not yet submitted — determine week number
+  const lastTwo = await getLastTwoWeekSubmissions();
+
+  // weekNumber: if there was a submission last week, this is week 2, else week 1
+  let weekNumber = 1;
+  let prevCheckin = null;
+  if (lastTwo.length >= 1) {
+    const lastWeekAgo = weeksAgo(lastTwo[0].monday);
+    if (lastWeekAgo === 1) {
+      weekNumber = 2;
+      prevCheckin = lastTwo[0].checkin;
+    }
+  }
+
+  const { streak, xp } = await getWeeklyStreak();
+  const weekInfo = { weekNumber, prevCheckin };
+
+  renderModePicker(container, weekInfo, (selectedMode) => {
     if (selectedMode === 'light') {
-      renderLightMode(container, { streak, xp });
+      renderLightMode(container, { streak, xp }, weekInfo);
     } else {
-      runSteps(container, selectedMode, { streak, xp });
+      runSteps(container, selectedMode, { streak, xp }, weekInfo);
     }
   });
 }
 
 // ── SUBMIT ────────────────────────────────────────────────────
-async function submit(container, isLightMode = false) {
+async function submit(container, isLightMode = false, weekInfo = {}) {
   if (!studentId) { showToast('Session error. Please log in again.', true); return; }
 
   const btn = document.getElementById('gaNext') || document.getElementById('gaLightSubmit');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; }
+
+  const { weekNumber = 1, prevCheckin = null } = weekInfo;
 
   const payload = {
     student_id:        studentId,
@@ -1392,9 +1633,10 @@ async function submit(container, isLightMode = false) {
     therapist_q1:      answers.therapist_q1,
     therapist_q2:      answers.therapist_q2,
     therapist_q3:      answers.therapist_q3,
+    week_number:       weekNumber,
   };
 
-  const { error } = await supabase.from('checkins').insert([payload]);
+  const { data: insertedData, error } = await supabase.from('checkins').insert([payload]).select('id');
 
   if (error) {
     showToast('Failed to save: ' + error.message, true);
@@ -1405,10 +1647,19 @@ async function submit(container, isLightMode = false) {
     return;
   }
 
+  const newCheckin = insertedData?.[0] ? { ...payload, id: insertedData[0].id } : payload;
+
+  // ── WEEK 2: Run 2-week evaluation ──
+  let eval2w = null;
+  if (weekNumber === 2 && prevCheckin) {
+    eval2w = evaluate2Weeks(prevCheckin, newCheckin);
+    await save2WeekEvaluation(eval2w);
+  }
+
   const isCrisis = isCrisisSignal();
   const name = sessionStorage.getItem('userName')?.split(' ')[0] || null;
 
-  // Build completion screen (buddy message loads async)
+  // Confetti
   const confetti = Array.from({length:16}, (_,i) => {
     const colors = ['#f9d338','#4db8b8','#22c55e','#ef4444','#a78bfa'];
     const color  = colors[i % colors.length];
@@ -1417,22 +1668,60 @@ async function submit(container, isLightMode = false) {
     return `<div class="ga-confetti-piece" style="left:${left}%;top:10%;background:${color};animation-delay:${delay}s;"></div>`;
   }).join('');
 
+  // Build eval result block for week 2
+  let evalBlock = '';
+  if (eval2w) {
+    const trendLabel = (v) => v > 0 ? `+${v} ↑` : v < 0 ? `${v} ↓` : `→ Same`;
+    const trendClass = (v, invert = false) => {
+      const positive = invert ? v < 0 : v > 0;
+      return positive ? 'trend-up' : v === 0 ? 'trend-flat' : 'trend-down';
+    };
+
+    const statusMsg = eval2w.riskLevel === 'urgent'
+      ? '⚠️ Your counselor has been notified. Please reach out — you\'re not alone.'
+      : eval2w.riskLevel === 'attention'
+      ? '📋 Your counselor will review this and may check in with you.'
+      : '✅ Your 2-week assessment looks good overall!';
+
+    evalBlock = `
+      <div class="ga-eval-result ${eval2w.riskLevel}" style="margin-top:1.2rem;">
+        <div class="ga-eval-result-title">📊 2-Week Evaluation: ${eval2w.status}</div>
+        <p style="font-size:0.8rem;margin:0.3rem 0 0.6rem;opacity:0.85;">${statusMsg}</p>
+        <div class="ga-eval-chips">
+          <span class="ga-eval-chip ${trendClass(eval2w.moodTrend)}">Mood trend: ${trendLabel(eval2w.moodTrend)}</span>
+          <span class="ga-eval-chip ${trendClass(eval2w.stressTrend, true)}">Stress trend: ${trendLabel(eval2w.stressTrend)}</span>
+          <span class="ga-eval-chip ${trendClass(eval2w.sleepTrend)}">Sleep trend: ${trendLabel(eval2w.sleepTrend)}</span>
+          <span class="ga-eval-chip trend-flat">Avg mood: ${eval2w.avgMood}/10</span>
+          <span class="ga-eval-chip trend-flat">Avg stress: ${eval2w.avgStress}/10</span>
+        </div>
+      </div>`;
+  } else if (weekNumber === 1) {
+    evalBlock = `
+      <div style="background:var(--surface-alt,#f8f9fb);border:1.5px solid var(--border,#e2e6ea);border-radius:14px;padding:0.9rem 1.1rem;margin-top:1rem;text-align:left;">
+        <div style="font-size:0.78rem;font-weight:800;color:var(--text-muted,#8a97a8);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Week 1 Complete ✓</div>
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary,#5a6272);">Complete your Week 2 check-in <strong>next Monday</strong> for a full 2-week wellness evaluation.</div>
+      </div>`;
+  }
+
   container.innerHTML = `
     <div class="ga-complete ga-confetti-wrap">
       ${confetti}
-      <div class="ga-complete-emoji">${isCrisis ? '💛' : '🎉'}</div>
-      <h2>${isCrisis ? 'Thank you for checking in' : 'Check-in complete!'}</h2>
+      <div class="ga-complete-emoji">${isCrisis ? '💛' : weekNumber === 2 ? '🎯' : '🎉'}</div>
+      <h2>${isCrisis ? 'Thank you for checking in' : weekNumber === 2 ? 'Week 2 complete!' : 'Week 1 done!'}</h2>
       <p>${isCrisis
         ? 'It takes courage to reach out. Your counselor can see this and is here for you.'
-        : 'Amazing work taking care of yourself today.<br>Your counselor will see this.'
+        : weekNumber === 2
+          ? 'Your 2-week wellness picture is now complete. Great commitment! 🌟'
+          : 'Amazing work. Come back next Monday for your Week 2 check-in.'
       }</p>
-      <div class="ga-complete-xp">+${isLightMode ? '10' : '20'} XP earned today 🔥</div>
+      <div class="ga-complete-xp">+${isLightMode ? '10' : '20'} XP earned this week 🔥</div>
       ${isCrisis ? `
         <div style="margin-top:1.2rem;">
           <button class="ga-crisis-btn" onclick="window.location.href='3studentcontact.html'" style="margin:0 auto;">
             <i class="fa-solid fa-comments"></i> Talk to a Counselor
           </button>
         </div>` : ''}
+      ${evalBlock}
     </div>
 
     <div class="ga-buddy-msg" id="gaBuddyMsg">
@@ -1446,9 +1735,8 @@ async function submit(container, isLightMode = false) {
       </div>
     </div>`;
 
-  showToast('Check-in saved! Great job 🎉');
+  showToast('Weekly check-in saved! Great job 🎉');
 
-  // Fetch Claude-powered buddy message
   const buddyMsg = await getBuddyMessage({
     mood: answers.mood_rating,
     stress: answers.stress_level,
@@ -1459,14 +1747,13 @@ async function submit(container, isLightMode = false) {
 
   const buddyEl = document.getElementById('gaBuddyMsg');
   if (buddyEl && buddyMsg) {
-    buddyEl.querySelector('.ga-buddy-text').innerHTML = buddyMsg;
+    buddyEl.querySelector('.ga-buddy-text').innerHTML = buddyMsg.replace(/\n/g, '<br>');
   } else if (buddyEl) {
-    // Fallback if API fails
     const fallback = isCrisis
-      ? "You showed up today, and that takes strength. 💛 Please don't hesitate to reach out to your counselor — they're here for you."
+      ? "You showed up today, and that takes strength. 💛 Please don't hesitate to reach out to your counselor."
       : isLightMode
-        ? "Just showing up counts more than you know. Be gentle with yourself today. 🌤️"
-        : "You took time to check in with yourself today — that's a real act of care. Keep it up! 🌟";
+        ? "Just showing up counts more than you know. Be gentle with yourself this week. 🌤️"
+        : "You took time to check in on yourself this week — that's a real act of care. See you next Monday! 🌟";
     buddyEl.querySelector('.ga-buddy-text').textContent = fallback;
   }
 }
