@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+  <html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Support-Q | Weekly Assessment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link rel="stylesheet" href="3studentdashboard.css"/>
+    <link rel="stylesheet" href="3assessmentstudent.css"/>
+  </head>
+  <body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="nav-actions">
+        <div class="avatar-wrapper" id="avatarBtn" aria-haspopup="true" aria-expanded="false">
+          <div class="nav-avatar">
+            <span class="nav-avatar-initials" id="navInitials">S</span>
+            <img class="nav-avatar-photo" id="navAvatarPhoto" src="" alt=""/>
+          </div>
+          <i class="fa-solid fa-chevron-down avatar-chevron"></i>
+
+          <div class="dropdown-menu" id="dropdownMenu" role="menu">
+            <div class="dropdown-header">
+              <div class="dropdown-avatar">
+                <span class="nav-avatar-initials" id="dropInitials">S</span>
+                <img class="dropdown-avatar-photo" id="dropdownAvatarPhoto" src="" alt=""/>
+              </div>
+              <div>
+                <p class="dropdown-name" id="dropName">Student</p>
+                <p class="dropdown-role" id="dropSection">Section</p>
+              </div>
+            </div>
+            <hr class="dropdown-divider"/>
+            <label class="avatar-upload-label" for="avatarFileInput">
+              <i class="fa-solid fa-camera"></i> Set Profile Photo
+            </label>
+            <input type="file" id="avatarFileInput" accept="image/*"/>
+            <button class="dropdown-item" id="profileBtn"><i class="fa-regular fa-user"></i> My Profile</button>
+            <button class="dropdown-item" id="settingsBtn"><i class="fa-solid fa-gear"></i> Settings</button>
+            <hr class="dropdown-divider"/>
+            <div class="dropdown-item theme-row">
+              <span><i class="fa-solid fa-circle-half-stroke"></i> Dark Mode</span>
+              <label class="toggle-switch" aria-label="Toggle dark mode">
+                <input type="checkbox" id="themeToggle"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <hr class="dropdown-divider"/>
+            <button class="dropdown-item logout" id="dropdownLogout">
+              <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- PAGE WRAPPER -->
+    <div class="page-wrapper">
+
+      <!-- SIDEBAR -->
+      <div class="sidebarwrapper">
+        <div class="sidebar">
+          <div class="sidebar-brand">
+            <i class="fa-solid fa-brain"></i> Support - Q
+          </div>
+          <hr class="divider">
+          <button onclick="window.location.href='3studentdashboard.html'">
+            <i class="fa-solid fa-house"></i> Dashboard
+          </button>
+          <button onclick="window.location.href='3studentcontact.html'">
+            <i class="fa-solid fa-comments"></i> Contact Counselors
+          </button>
+          <button class="active" onclick="window.location.href='3assessmentstudent.html'">
+            <i class="fa-solid fa-file-lines"></i> Assessments
+          </button>
+          <button onclick="window.location.href='3studentresources.html'">
+            <i class="fa-solid fa-hands-holding-circle"></i> Resources
+          </button>
+          <button onclick="window.location.href='3studentjournal.html'">
+            <i class="fa-solid fa-book-open"></i> Journal
+          </button>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <main class="main-content">
+
+        <!-- ASSESSMENTS -->
+        <section id="section-assessments" class="content-section active">
+          <div class="breadcrumb">
+            <a href="3studentdashboard.html">Dashboard</a>
+            <span class="breadcrumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+            <span>Weekly Assessment</span>
+          </div>
+          <div class="page-icon-wrapper">
+            <div class="page-icon" style="background:var(--teal);color:#fff;">
+              <i class="fa-solid fa-calendar-week"></i>
+            </div>
+          </div>
+
+          <div class="banner">
+            <i class="fa-solid fa-calendar-week banner-icon"></i>
+            <p>Complete your <strong>weekly</strong> wellness check-in every Monday. Your responses over 2 weeks help counselors better understand and support you.</p>
+          </div>
+
+          <div id="assessSubmittedBanner" class="assess-submitted-banner">
+            <i class="fa-solid fa-circle-check" style="color:#22c55e;font-size:1.1rem;flex-shrink:0;"></i>
+            You've already submitted a check-in for today! 🎉 Come back tomorrow, or add an optional follow-up below.
+          </div>
+          <div id="assessSevenDay" class="assess-seven-day">
+            <strong>📅 7-Day Check-in Reminder</strong>
+            It's been about a week — feel free to add extra notes in the follow-up section.
+          </div>
+
+          <div class="card" style="min-height: calc(100vh - 340px);">
+            <div class="card-header">
+              <span class="card-header-icon" style="background:var(--teal);color:#fff;">
+                <i class="fa-solid fa-calendar-week"></i>
+              </span>
+              <h2>Weekly Check-in</h2>
+            </div>
+            <div class="assessment-card-body" style="padding:1.2rem 1.3rem 1.5rem; display:flex; flex-direction:column;">
+              <form id="checkinForm" style="flex:1; display:flex; flex-direction:column;"></form>
+            </div>
+          </div>
+
+
+        </section>
+
+      </main>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+      <i class="fa-solid fa-circle-check"></i>
+      <span id="toastMsg">Saved!</span>
+    </div>
+    <script src="navbar-user.js" defer></script>
+    <script type="module" src="3assessmentstudent.js"></script>
+    <script src="npcbuddy.js" defer></script>
+    
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var sidebar = document.querySelector('.sidebarwrapper');
+  if (!sidebar) return;
+
+  // Overlay
+  var overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+
+  // Hamburger button
+  var navbar = document.querySelector('.navbar');
+  var hamburger = null;
+  if (navbar) {
+    hamburger = document.createElement('button');
+    hamburger.className = 'hamburger-btn';
+    hamburger.setAttribute('aria-label', 'Toggle menu');
+    hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    navbar.prepend(hamburger);
+
+    hamburger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = sidebar.classList.toggle('open');
+      overlay.classList.toggle('show', isOpen);
+    });
+  }
+
+  // Close on overlay click
+  overlay.addEventListener('click', function() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  });
+
+  // Close on sidebar nav click (mobile)
+  sidebar.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, a');
+    if (btn && window.innerWidth <= 768) {
+      // small delay so navigation can begin first
+      setTimeout(function() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+      }, 80);
+    }
+  });
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) &&
+        hamburger && !hamburger.contains(e.target)) {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    }
+  });
+});
+</script>
+</body>
+  </html>
