@@ -5,110 +5,322 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support Q</title>
     <link rel="stylesheet" href="1hompage.css">
+    <style>
+        .password-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-group input {
+            flex: 1;
+        }
+        .toggle-password {
+            margin-left: 8px;
+            margin-right: 8px;
+            border: none;
+            background: transparent;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .toggle-password:hover {
+            text-decoration: underline;
+        }
+        .password-group input[type="password"] {
+            appearance: none;
+        }
+        .password-group input[type="password"]::-ms-reveal,
+        .password-group input[type="password"]::-ms-clear {
+            display: none;
+        }
+        .password-group input[type="password"]::-webkit-textfield-decoration-container {
+            display: none !important;
+        }
+        .password-group input[type="password"]::-webkit-credentials-auto-fill-button {
+            visibility: hidden !important;
+            display: none !important;
+            pointer-events: none;
+            width: 0;
+            height: 0;
+        }
+        .forgot-link {
+            display: block;
+            margin: 8px 0 0;
+            color: #007bff;
+            text-decoration: none;
+            text-align: center;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 
 <body>
 
 <script type="module">
-    
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
     const supabaseUrl = 'https://damkluawdvsthjjcpzgp.supabase.co'
     const supabaseKey = 'sb_publishable_e-m7pdLACqrJAxRiPuy7UA_LXzHuEC6'
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    let signupInProgress = false;
+
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
     window.closeAll = () => {
-        document.querySelectorAll(".modal").forEach(m => m.style.display = "none");
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
 
     window.openStudentSignup = () => {
         window.closeAll();
-        document.getElementById("studentSignup").style.display = "flex";
+        document.getElementById('studentSignup').style.display = 'flex';
     };
+
     window.backTomodal = () => {
-        window.closeAll(); 
-        document.getElementById("loginModal").style.display = "flex"; 
+        window.closeAll();
+        document.getElementById('loginModal').style.display = 'flex';
     };
 
-    
-    const loginBtn = document.getElementById("loginBtn");
-    const mainModal = document.getElementById("loginModal");
-    const sso = document.getElementById("sso");
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginBtn = document.getElementById('loginBtn');
+        const mainModal = document.getElementById('loginModal');
 
-    loginBtn.onclick = () => mainModal.style.display = "flex";
+        loginBtn.onclick = () => mainModal.style.display = 'flex';
 
-    document.querySelector(".student-btn").onclick = () => {
-        mainModal.style.display = "none";
-        document.getElementById("studentLogin").style.display = "flex";
-    };
+        document.querySelector('.student-btn').onclick = () => {
+            mainModal.style.display = 'none';
+            document.getElementById('studentLogin').style.display = 'flex';
+        };
 
-    document.querySelector(".admin-btn").onclick = () => {
-        mainModal.style.display = "none";
-        document.getElementById("adminLogin").style.display = "flex";
-    };
+        document.querySelector('.admin-btn').onclick = () => {
+            mainModal.style.display = 'none';
+            document.getElementById('adminLogin').style.display = 'flex';
+        };
+
+        document.getElementById('toggleStudentPass').addEventListener('click', function() {
+            togglePassword('studentLoginPass', this);
+        });
+        document.getElementById('toggleAdminPass').addEventListener('click', function() {
+            togglePassword('adminLoginPass', this);
+        });
+        document.getElementById('toggleSignupPass').addEventListener('click', function() {
+            togglePassword('sPass', this);
+        });
+
+        document.getElementById('forgotStudentPass').addEventListener('click', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('studentLoginEmail').value.trim();
+            if (!email) {
+                alert('Please enter your email first.');
+                return;
+            }
+            if (!isValidEmail(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            const newPass = prompt('Enter your new password (at least 6 characters):');
+            if (!newPass || newPass.length < 6) {
+                alert('Password must be at least 6 characters.');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ password: newPass })
+                    .eq('email', email)
+                    .eq('role', 'student');
+
+                if (error) throw error;
+                alert('Password updated successfully. You can now log in with the new password.');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        document.getElementById('forgotAdminPass').addEventListener('click', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('adminLoginEmail').value.trim();
+            if (!email) {
+                alert('Please enter your email first.');
+                return;
+            }
+            if (!isValidEmail(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            const newPass = prompt('Enter your new password (at least 6 characters):');
+            if (!newPass || newPass.length < 6) {
+                alert('Password must be at least 6 characters.');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ password: newPass })
+                    .eq('email', email)
+                    .eq('role', 'admin');
+
+                if (error) throw error;
+                alert('Password updated successfully. You can now log in with the new password.');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    });
 
     window.signupStudent = async function() {
-        const email = document.getElementById("sEmail").value;
-        const pass = document.getElementById("sPass").value;
-        const name = document.getElementById("sName").value;
-        const grade = document.getElementById("sGrade").value;
-        const strand = document.getElementById("sStrand").value;
+        const email = document.getElementById('sEmail').value.trim();
+        const pass = document.getElementById('sPass').value;
+        const name = document.getElementById('sName').value.trim();
+        const grade = document.getElementById('sGrade').value.trim();
+        const strand = document.getElementById('sStrand').value.trim();
+        const button = document.querySelector('#studentSignup .modal-submit-btn');
 
-        const { error } = await supabase
-            .from('profiles')
-            .insert([{ email, password: pass, name, grade, strand, role: 'student' }]);
+        if (!email || !pass || !name || !grade || !strand) {
+            alert('All fields are required.');
+            return;
+        }
+        if (!isValidEmail(email)) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+        if (pass.length < 6) {
+            alert('Password must be at least 6 characters.');
+            return;
+        }
+        if (signupInProgress) {
+            return;
+        }
 
-        if (error) {
-            alert("Signup Error: " + error.message);
-        } else {
-            alert("Student account created in the cloud!");
+        signupInProgress = true;
+        button.disabled = true;
+        button.textContent = 'Creating...';
+
+        try {
+            const { data: existingProfile, error: existingError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', email)
+                .limit(1)
+                .maybeSingle();
+
+            if (existingError) {
+                throw existingError;
+            }
+            if (existingProfile) {
+                alert('An account with this email already exists.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('profiles')
+                .insert([{ email, password: pass, name, grade, strand, role: 'student' }]);
+
+            if (error) throw error;
+            alert('Student account created successfully.');
             window.closeAll();
+        } catch (error) {
+            alert('Signup Error: ' + error.message);
+        } finally {
+            signupInProgress = false;
+            button.disabled = false;
+            button.textContent = 'Create Account';
         }
     };
 
     window.loginStudent = async function() {
-        const emailInput = document.getElementById("studentLoginEmail").value;
-        const passInput = document.getElementById("studentLoginPass").value;
+        const email = document.getElementById('studentLoginEmail').value.trim();
+        const pass = document.getElementById('studentLoginPass').value;
 
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', emailInput)
-            .single();
+        if (!email || !pass) {
+            alert('Email and password are required.');
+            return;
+        }
+        if (!isValidEmail(email)) {
+            alert('Please enter a valid email address.');
+            return;
+        }
 
-        if (data && data.password === passInput && data.role === 'student') {
-            alert("Student logged in!");
-            sessionStorage.setItem("userRole", "student");
-            sessionStorage.setItem("userName", data.name);
-            sessionStorage.setItem("userId", String(data.id));
-            sessionStorage.setItem("userEmail", data.email);
-            window.location.href = "3studentdashboard.html";
-        } else {
-            alert("Invalid credentials or account does not exist.");
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('email', email)
+                .eq('password', pass)
+                .eq('role', 'student')
+                .single();
+
+            if (error || !data) {
+                throw new Error('Invalid credentials or account does not exist.');
+            }
+
+            sessionStorage.setItem('userRole', 'student');
+            sessionStorage.setItem('userName', data.name);
+            sessionStorage.setItem('userId', String(data.id));
+            sessionStorage.setItem('userEmail', data.email);
+            sessionStorage.setItem('userGrade', data.grade || '');
+            sessionStorage.setItem('userStrand', data.strand || '');
+            window.location.href = '3studentdashboard.html';
+        } catch (error) {
+            alert('Login Error: ' + error.message);
         }
     };
 
     window.loginAdmin = async function() {
-        const emailInput = document.getElementById("adminLoginEmail").value;
-        const passInput = document.getElementById("adminLoginPass").value;
+        const email = document.getElementById('adminLoginEmail').value.trim();
+        const pass = document.getElementById('adminLoginPass').value;
 
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', emailInput)
-            .single();
+        if (!email || !pass) {
+            alert('Email and password are required.');
+            return;
+        }
+        if (!isValidEmail(email)) {
+            alert('Please enter a valid email address.');
+            return;
+        }
 
-        if (data && data.password === passInput && data.role === 'admin') {
-            alert("Admin logged in!");
-            sessionStorage.setItem("userRole", "admin");
-            sessionStorage.setItem("userName", data.name);
-            sessionStorage.setItem("userId", String(data.id));
-            sessionStorage.setItem("userEmail", data.email);
-            window.location.href = "2admindashboard.html";
-        } else {
-            alert("Invalid admin credentials.");
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('email', email)
+                .eq('password', pass)
+                .eq('role', 'admin')
+                .single();
+
+            if (error || !data) {
+                throw new Error('Invalid admin credentials.');
+            }
+
+            sessionStorage.setItem('userRole', 'admin');
+            sessionStorage.setItem('userName', data.name);
+            sessionStorage.setItem('userId', String(data.id));
+            sessionStorage.setItem('userEmail', data.email);
+            window.location.href = '2admindashboard.html';
+        } catch (error) {
+            alert('Login Error: ' + error.message);
         }
     };
+
+    function togglePassword(inputId, button) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.textContent = 'Hide';
+        } else {
+            input.type = 'password';
+            button.textContent = 'Show';
+        }
+    }
 </script>
 
 <nav class="navbar">
@@ -143,8 +355,10 @@
                 </p>
                 <p>
                     This system helps identify common mental health concerns such as stress, anxiety, and depression. After completing an assessment, users receive personalized feedback along with practical suggestions to improve their well-being. These may include self-care tips, coping strategies, and recommendations to seek guidance from a counselor or mental health professional when needed.
+                </p>
                 <p>
                     We aim to create a safe and supportive digital space where students can reflect on their mental health without fear of judgment. By promoting awareness and early detection, our platform encourages users to take proactive steps toward maintaining a healthy mind. Our goal is not only to provide assessments but also to empower individuals with knowledge, promote emotional resilience, and contribute to a healthier school community.
+                </p>
             </div>
             <div class="about-stats">
                 <div class="stat-item">
@@ -198,10 +412,12 @@
             <div class="input-group">
                 <input type="email" id="studentLoginEmail" placeholder="Email address">
             </div>
-            <div class="input-group">
+            <div class="input-group password-group">
                 <input type="password" id="studentLoginPass" placeholder="Password">
+                <button type="button" class="toggle-password" id="toggleStudentPass">Show</button>
             </div>
             <button class="modal-submit-btn" onclick="loginStudent()">Log In</button>
+            <a href="#" class="forgot-link" id="forgotStudentPass">Forgot Password?</a>
             <button class="modal-signup-btn" onclick="openStudentSignup()">No account yet? Sign up</button>
         </div>
     </div>
@@ -216,10 +432,12 @@
             <div class="input-group">
                 <input type="email" id="adminLoginEmail" placeholder="Admin email">
             </div>
-            <div class="input-group">
+            <div class="input-group password-group">
                 <input type="password" id="adminLoginPass" placeholder="Password">
+                <button type="button" class="toggle-password" id="toggleAdminPass">Show</button>
             </div>
             <button class="modal-submit-btn admin-submit" onclick="loginAdmin()">Log In</button>
+            <a href="#" class="forgot-link" id="forgotAdminPass">Forgot Password?</a>
             <button class="modal-back-btn" id="sso" onclick="backTomodal()">← Back to SSO</button>
         </div>
     </div>
@@ -245,8 +463,9 @@
             <div class="input-group">
                 <input type="email" id="sEmail" placeholder="Email address">
             </div>
-            <div class="input-group">
+            <div class="input-group password-group">
                 <input type="password" id="sPass" placeholder="Create a password">
+                <button type="button" class="toggle-password" id="toggleSignupPass">Show</button>
             </div>
             <button class="modal-submit-btn" onclick="signupStudent()">Create Account</button>
         </div>
