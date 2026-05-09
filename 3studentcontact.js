@@ -65,7 +65,7 @@ function getInitials(name) {
 }
 
 function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function formatDate(iso) {
@@ -77,10 +77,18 @@ function formatDate(iso) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function escapeHtml(text) {
-  const el = document.createElement('div');
-  el.appendChild(document.createTextNode(text || ''));
-  return el.innerHTML;
+function formatTimeAgo(iso) {
+  if (!iso) return 'Never';
+  const now = new Date();
+  const then = new Date(iso);
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
 // ── CHAT DOM REFS ────────────────────────────────────────────
@@ -94,6 +102,7 @@ const chatPanelSend   = document.getElementById('chatPanelSend');
 
 let activeAdmin = null;   // { id, name, initials }
 let realtimeSub = null;
+let isSending = false;
 
 // ── UNREAD BADGES ────────────────────────────────────────────
 function setUnreadBadge(adminId, count) {
@@ -136,23 +145,30 @@ async function deleteMessage(msgId, msgEl) {
   }
 }
 
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(text || ''));
+  return div.innerHTML;
+}
+
 function buildMsgEl(msg) {
   const sid       = getStudentId();
-  const isStudent = msg.sender === sid;
+  const isStudent = String(msg.sender) === String(sid);
   const msgEl     = document.createElement('div');
   msgEl.className    = `chat-msg ${isStudent ? 'student' : 'admin'}`;
   msgEl.dataset.msgId = msg.id;
+  const msgText = msg.files ?? msg.text ?? msg.message ?? '(empty message)';
 
   msgEl.innerHTML = `
     <div class="chat-bubble-wrap">
-      <div class="chat-bubble">${escapeHtml(msg.files)}</div>
+      <div class="chat-bubble">${escapeHtml(msgText)}</div>
       ${isStudent ? `<button class="delete-btn" title="Delete message"><i class="fa-solid fa-trash"></i></button>` : ''}
     </div>
-    <span class="chat-time">${formatTime(msg.date)}</span>
   `;
 
   if (isStudent) {
-    msgEl.querySelector('.delete-btn').addEventListener('click', () => deleteMessage(msg.id, msgEl));
+    const btn = msgEl.querySelector('.delete-btn');
+    if (btn) btn.addEventListener('click', () => deleteMessage(msg.id, msgEl));
   }
 
   return msgEl;
@@ -171,12 +187,16 @@ function appendDateDividerIfNeeded(isoDate) {
 
 function renderMessages(messages) {
   chatPanelBody.innerHTML = '';
-  if (!messages?.length) {
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
     chatPanelBody.innerHTML = '<p class="chat-loading">No messages yet. Send a message!</p>';
     return;
   }
   let lastDate = null;
   messages.forEach(msg => {
+    if (!msg || !msg.date) {
+      console.warn('Invalid message structure:', msg);
+      return;
+    }
     const d = formatDate(msg.date);
     if (d !== lastDate) {
       const divider = document.createElement('div');
@@ -185,7 +205,8 @@ function renderMessages(messages) {
       chatPanelBody.appendChild(divider);
       lastDate = d;
     }
-    chatPanelBody.appendChild(buildMsgEl(msg));
+    const el = buildMsgEl(msg);
+    if (el) chatPanelBody.appendChild(el);
   });
   chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
 }
@@ -204,27 +225,34 @@ async function loadMessages(adminId) {
 
   chatPanelBody.innerHTML = '<p class="chat-loading">Loading messages…</p>';
 
-  const { data, error } = await supabase
-    .from('messages')
-    .select('*')
-    .or(`and(sender.eq.${sid},receiver.eq.${adminId}),and(sender.eq.${adminId},receiver.eq.${sid})`)
-    .order('date', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`and(sender.eq.${sid},receiver.eq.${adminId}),and(sender.eq.${adminId},receiver.eq.${sid})`)
+      .order('date', { ascending: true });
 
-  if (error) {
-    chatPanelBody.innerHTML = '<p class="chat-loading" style="color:#e53935;">Error loading messages.</p>';
-    return;
+    if (error) {
+      console.error('Query error:', error);
+      chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Error loading messages: ${error.message}</p>`;
+      return;
+    }
+
+    console.log('Loaded messages:', data);
+    renderMessages(data);
+
+    // Mark incoming messages as seen
+    await supabase.from('messages')
+      .update({ seen: 1 })
+      .eq('sender', adminId)
+      .eq('receiver', sid)
+      .eq('seen', 0);
+
+    setUnreadBadge(adminId, 0);
+  } catch (err) {
+    console.error('loadMessages error:', err);
+    chatPanelBody.innerHTML = `<p class="chat-loading" style="color:#e53935;">Error: ${err.message}</p>`;
   }
-
-  renderMessages(data);
-
-  // Mark incoming messages as seen
-  await supabase.from('messages')
-    .update({ seen: 1 })
-    .eq('sender', adminId)
-    .eq('receiver', sid)
-    .eq('seen', 0);
-
-  setUnreadBadge(adminId, 0);
 }
 
 function subscribeToMessages(adminId) {
@@ -239,9 +267,12 @@ function subscribeToMessages(adminId) {
     .channel(`chat_student_${sid}_admin_${adminId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
       const msg = payload.new;
-      const relevant = (msg.sender === sid && msg.receiver === adminId)
-                    || (msg.sender === adminId && msg.receiver === sid);
+      const relevant = (String(msg.sender) === String(sid) && String(msg.receiver) === String(adminId))
+                    || (String(msg.sender) === String(adminId) && String(msg.receiver) === String(sid));
       if (!relevant) return;
+
+      // Check if already appended
+      if (document.querySelector(`[data-msg-id="${msg.id}"]`)) return;
 
       appendDateDividerIfNeeded(msg.date);
       chatPanelBody.appendChild(buildMsgEl(msg));
@@ -270,33 +301,67 @@ function openChatPanel(admin) {
 
 // ── SEND MESSAGE ─────────────────────────────────────────────
 async function sendMessage() {
+  if (isSending) return;
   const text = chatPanelInput.value.trim();
   if (!text || !activeAdmin) return;
 
   const sid = getStudentId();
   if (!sid) { alert('Session error. Please log in again.'); return; }
 
+  isSending = true;
+  const now = new Date().toISOString();
+  const tempId = Date.now();
+  const msgData = {
+    sender: sid,
+    receiver: activeAdmin.id,
+    files: text,
+    date: now,
+    seen: 0,
+    id: tempId
+  };
+
   chatPanelInput.value    = '';
   chatPanelInput.disabled = true;
   chatPanelSend.disabled  = true;
 
-  const { error } = await supabase.from('messages').insert([{
-    sender:   sid,
-    receiver: activeAdmin.id,
-    files:    text,
-    date:     new Date().toISOString(),
-    seen:     0,
-  }]);
+  // Append locally first for instant feedback
+  appendDateDividerIfNeeded(now);
+  const msgEl = buildMsgEl(msgData);
+  chatPanelBody.appendChild(msgEl);
+  chatPanelBody.scrollTop = chatPanelBody.scrollHeight;
 
-  chatPanelInput.disabled = false;
-  chatPanelSend.disabled  = false;
-  chatPanelInput.focus();
+  try {
+    const { data, error } = await supabase.from('messages').insert([{
+      sender:   sid,
+      receiver: activeAdmin.id,
+      files:    text,
+      date:     now,
+      seen:     0,
+    }]).select('id');
 
-  if (error) alert('Failed to send: ' + error.message);
+    if (error) {
+      alert('Failed to send: ' + error.message);
+      msgEl.remove();
+    } else if (!data || !data[0]) {
+      alert('Failed to send: Insert failed');
+      msgEl.remove();
+    } else {
+      // Update with real ID
+      msgEl.dataset.msgId = data[0].id;
+    }
+  } catch (err) {
+    alert('Failed to send: ' + err.message);
+    msgEl.remove();
+  } finally {
+    isSending = false;
+    chatPanelInput.disabled = false;
+    chatPanelSend.disabled  = false;
+    chatPanelInput.focus();
+  }
 }
 
 chatPanelSend.addEventListener('click', sendMessage);
-chatPanelInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+chatPanelInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
 // ── LOAD COUNSELORS ──────────────────────────────────────────
 const AVATAR_COLORS = [
@@ -309,22 +374,36 @@ const AVATAR_COLORS = [
 async function loadCounselors() {
   const container = document.getElementById('counselorList');
 
-  const [{ data, error }, unreadCounts] = await Promise.all([
+  const sid = getStudentId();
+  const [{ data: admins, error }, unreadCounts] = await Promise.all([
     supabase.from('profiles').select('*').eq('role', 'admin'),
     fetchUnreadCounts(),
   ]);
 
-  if (error || !data?.length) {
+  if (error || !admins?.length) {
     container.innerHTML = '<p class="chat-loading" style="color:#aab0ba;">No counselors available right now.</p>';
     return;
   }
 
+  // Fetch last message times
+  const lastMsgPromises = admins.map(admin =>
+    supabase.from('messages')
+      .select('date')
+      .or(`and(sender.eq.${sid},receiver.eq.${admin.id}),and(sender.eq.${admin.id},receiver.eq.${sid})`)
+      .order('date', { ascending: false })
+      .limit(1)
+      .single()
+  );
+  const lastMsgs = await Promise.all(lastMsgPromises);
+
   container.innerHTML = '';
 
-  data.forEach((admin, idx) => {
+  admins.forEach((admin, idx) => {
     const ini     = getInitials(admin.name || 'Admin');
     const unread  = unreadCounts[admin.id] || 0;
     const color   = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+    const lastMsg = lastMsgs[idx]?.data?.date;
+    const status  = lastMsg ? (new Date() - new Date(lastMsg) < 300000 ? 'Online' : formatTimeAgo(lastMsg)) : 'Never online';
 
     const item = document.createElement('div');
     item.className  = 'counselor-item';
@@ -334,6 +413,7 @@ async function loadCounselors() {
       <div class="counselor-info">
         <p class="counselor-name">${admin.name || 'Counselor'}</p>
         <p class="counselor-role">${admin.email || 'Guidance Counselor'}</p>
+        <p class="counselor-status">${status}</p>
       </div>
       ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ''}
       <div class="counselor-radio"></div>

@@ -36,6 +36,14 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getMondayOf(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
 function formatDate(isoStr) {
   return new Date(isoStr).toLocaleDateString([], {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
@@ -72,30 +80,30 @@ function updateStatCards(checkins) {
   // Total check-ins ever
   if (totalEl) totalEl.textContent = checkins.length;
 
-  // Did they submit today?
-  const today     = todayStr();
-  const doneToday = checkins.some(c => c.submitted_at?.slice(0, 10) === today);
+  // Did they submit this week?
+  const thisMonday  = getMondayOf(new Date());
+  const doneToday   = checkins.some(c => getMondayOf(new Date(c.submitted_at)) === thisMonday);
 
   if (todayEl) {
-    todayEl.textContent = doneToday ? '✅ Done' : '⏳ Pending';
+    todayEl.textContent = doneToday ? '✅ Done' : '⏳ Due';
     todayEl.style.color = doneToday ? '#22c55e' : '#f9a825';
   }
 
   if (doneToday) {
     if (reminderTitle) reminderTitle.textContent = 'Check-in Complete!';
-    if (reminderDesc)  reminderDesc.textContent  = "You've already logged today's check-in. See you tomorrow!";
+    if (reminderDesc)  reminderDesc.textContent  = "You've already submitted this week's check-in. See you next Monday!";
     if (goBtn)         goBtn.textContent          = '📋 View History';
   }
 
-  // Completion rate — last 14 days
-  const submitted = new Set(checkins.map(c => c.submitted_at?.slice(0, 10)));
+  // Completion rate — last 2 weeks (1 submission per week expected)
+  const submittedWeeks = new Set(checkins.map(c => getMondayOf(new Date(c.submitted_at))));
   let submittedCount = 0;
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 2; i++) {
     const d = new Date();
-    d.setDate(d.getDate() - i);
-    if (submitted.has(d.toISOString().slice(0, 10))) submittedCount++;
+    d.setDate(d.getDate() - i * 7);
+    if (submittedWeeks.has(getMondayOf(d))) submittedCount++;
   }
-  const rate = Math.round((submittedCount / 14) * 100);
+  const rate = Math.round((submittedCount / 2) * 100);
   if (rateEl) rateEl.textContent = rate + '%';
 }
 
@@ -170,28 +178,30 @@ function renderUnsubmitted(checkins) {
   const list = document.getElementById('unsubmittedList');
   if (!list) return;
 
-  const submitted = new Set(checkins.map(c => c.submitted_at?.slice(0, 10)));
-  const missed    = [];
+  // Check which of the last 2 weeks (excluding current week) had no submission
+  const submittedWeeks = new Set(checkins.map(c => getMondayOf(new Date(c.submitted_at))));
+  const missed = [];
 
-  for (let i = 1; i <= 14; i++) {       // start from 1 — skip today
+  for (let i = 1; i <= 2; i++) {  // i=1: last week, i=2: week before
     const d = new Date();
-    d.setDate(d.getDate() - i);
-    const str = d.toISOString().slice(0, 10);
-    if (!submitted.has(str)) missed.push(str);
+    d.setDate(d.getDate() - i * 7);
+    const mon = getMondayOf(d);
+    if (!submittedWeeks.has(mon)) missed.push(mon);
   }
 
   if (!missed.length) {
     list.innerHTML = `<p style="color:#22c55e;font-size:0.85rem;font-weight:700;text-align:center;padding:0.5rem 0;">
-      🎉 Perfect — no missed days in the last 2 weeks!
+      🎉 Perfect — no missed weeks in the last 2 weeks!
     </p>`;
     return;
   }
 
   list.innerHTML = '';
   missed.forEach(dateStr => {
-    const label = new Date(dateStr + 'T12:00:00').toLocaleDateString([], {
-      weekday: 'long', month: 'short', day: 'numeric',
-    });
+    const monday = new Date(dateStr + 'T12:00:00');
+    const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+    const fmt = d => d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const label = 'Week of ' + fmt(monday) + ' – ' + fmt(sunday);
 
     const item = document.createElement('div');
     item.style.cssText = `

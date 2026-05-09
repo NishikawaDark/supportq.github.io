@@ -503,7 +503,7 @@ body {
 
 .counselor-item.selected .counselor-name { color: #f9d338; }
 .counselor-item.selected .counselor-role { color: rgba(255,255,255,0.65); }
-.counselor-item.selected .tag           { color: rgba(255,255,255,0.45); }
+.counselor-item.selected .counselor-status { color: rgba(255,255,255,0.45); }
 
 .counselor-avatar {
   width: 42px; height: 42px;
@@ -517,6 +517,25 @@ body {
 }
 
 .counselor-info { flex: 1; min-width: 0; }
+
+.counselor-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.counselor-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0.2rem 0 0 0;
+}
+
+.counselor-status {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0.1rem 0 0 0;
+}
 
 .counselor-name {
   font-size: 0.88rem;

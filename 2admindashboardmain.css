@@ -88,6 +88,9 @@
             font-size: 11.5px; color: #8a97a8; font-weight: 600; margin-top: 1px;
             font-style: italic;
         }
+        .student-card-status {
+            font-size: 10px; color: #aab0ba; font-weight: 500; margin-top: 1px;
+        }
 
         /* Status badge (pill) */
         .status-badge {

@@ -1,14 +1,12 @@
 // ============================================================
-//  npcbuddy.js  —  Support-Q Buddy Widget  (AI-powered)
+//  npcbuddy.js  —  Support-Q Buddy Widget  (Fixed Conversation Flow)
 //  Drop into any page:  <script src="npcbuddy.js" defer></script>
 //
 //  • Buddy floats bottom-right as a bouncy FAB
-//  • Opens a chat-style panel with an input box
-//  • USER CAN TYPE — Buddy replies via Claude AI
-//  • Claude is given a mental-health companion system prompt
-//  • Falls back to local messages if API fails
+//  • Opens a chat-style panel with button choices
+//  • All messages and replies are fixed (no AI / no typing)
+//  • Separate conversation trees for students vs admins
 //  • Detects inactivity and sends a check-in
-//  • Adapts tone for student vs admin
 // ============================================================
 
 (function () {
@@ -20,198 +18,386 @@
   const isAdmin  = role === 'admin';
   const name     = userName.split(' ')[0] || 'there';
 
-  // ── MENTAL HEALTH SMART RESPONDER ────────────────────────
-  // Uses context-aware keyword matching + free wellness quote API
-  // No API key required — fully open and CORS-friendly.
-
-  const RESPONSE_RULES = isAdmin ? [
-    { keywords: ['tired','exhausted','burnout','burn out','drained','overwhelmed'],
-      replies: [
-        `Compassion fatigue is real, ${name}. You give so much every day. What's one thing you can take off your plate today? 💙`,
-        `You carry other people's weight constantly — that's incredibly hard. Have you taken even 10 minutes just for yourself? 🌿`,
-        `Burnout doesn't mean you're weak. It means you've been strong for too long. Be gentle with yourself today 💛`,
-      ]},
-    { keywords: ['stressed','stress','pressure','anxious','anxiety','worried'],
-      replies: [
-        `That pressure is very real. Try this: breathe in for 4 counts, hold 4, out 4. Even once helps. What's weighing most on you? 💙`,
-        `Stress in your role is unavoidable, but you don't have to carry it alone. Who do you lean on? 🌿`,
-        `You matter too, ${name} — not just your students. What would feel like relief right now?`,
-      ]},
-    { keywords: ['good','great','fine','okay','well','happy','better'],
-      replies: [
-        `That's genuinely good to hear! What's contributing to that today? 😊`,
-        `Love to hear that, ${name}! Even small good days deserve celebrating 🌟`,
-        `That's great! Hold onto that energy — you deserve to feel good after everything you do 💙`,
-      ]},
-  ] : [
-    { keywords: ['sad','depressed','depression','cry','crying','hopeless','worthless'],
-      replies: [
-        `I hear you, and your feelings are completely valid 💛 You don't have to be okay right now. Is there a counselor you trust? You can message them right here in the app.`,
-        `That sounds really heavy. Thank you for sharing it. If things feel really dark, please reach out via the Contact tab 💙`,
-        `You're not alone in this, even when it feels that way. Can you tell me one tiny thing that happened today — anything at all?`,
-      ]},
-    { keywords: ['anxious','anxiety','scared','nervous','panic','worried','stress','stressed'],
-      replies: [
-        `Anxiety is exhausting 😔 Try this right now: name 5 things you can see around you. It brings your mind back to the present. You've got this 💛`,
-        `That sounds really overwhelming. Let's slow it down — what's the ONE thing stressing you most right now? We can work through it together.`,
-        `Try a 4-7-8 breath: inhale 4s, hold 7s, exhale 8s. It actually calms your nervous system. Want to try it? 🌬️`,
-      ]},
-    { keywords: ['lonely','alone','no friends','no one','isolated','left out'],
-      replies: [
-        `Loneliness is one of the hardest feelings. You're not invisible — I see you 💛 Is there one person you could reach out to today, even just a message?`,
-        `Feeling disconnected really hurts. You matter more than you know. Have you tried talking to your school counselor? They're genuinely there for you.`,
-        `You showed up here and that already takes courage 🌟 You're not as alone as you feel right now.`,
-      ]},
-    { keywords: ['tired','exhausted','sleep','can\'t sleep','no sleep','sleepy'],
-      replies: [
-        `Lack of sleep makes everything harder. Even 20 minutes of rest (not sleep, just lying down) can help reset you. Can you get that today? 💤`,
-        `Your body is telling you something. Rest is not laziness — it's maintenance. Be kind to yourself today 🌿`,
-        `Sleep struggles are so common for students. Try putting your phone away 30 min before bed. What's keeping you awake?`,
-      ]},
-    { keywords: ['school','study','exam','test','homework','assignment','grade','grades','academic','fail','failing'],
-      replies: [
-        `Academic pressure is SO real. But here's the thing: your grade is not your worth 💛 What's one small step you can take right now?`,
-        `Study overwhelm hits hard. Try the Pomodoro method: 25 min focus, 5 min break. Want to try one round? 📚`,
-        `You're dealing with a lot. Talk to your teacher or counselor — they can help more than you might think.`,
-      ]},
-    { keywords: ['good','great','happy','excited','amazing','awesome','nice','better','okay','fine','well'],
-      replies: [
-        `That's genuinely wonderful to hear! 😊 What made it good? Tell me more!`,
-        `Yes! I love hearing that 🌟 Hold onto that feeling — you deserve good days.`,
-        `That makes me happy! Keep noticing these moments, they matter more than you think 💛`,
-      ]},
-    { keywords: ['help','need help','i need','please','struggling'],
-      replies: [
-        `I'm right here 💛 Tell me more — what's going on? I'm listening.`,
-        `You reached out and that takes courage. What do you need most right now — to vent, advice, or just to feel heard?`,
-        `I've got you. Start wherever you want — what's the heaviest thing on your mind?`,
-      ]},
-    { keywords: ['self harm','hurt myself','cut','cutting','suicide','kill myself','end it','die','dying'],
-      replies: [
-        `Thank you for trusting me with this 💛 Please reach out to your school counselor right now — you can message them in the Contact tab. If it's urgent, call or text 988. You matter so much.`,
-        `I care about you and I'm taking this seriously. Please talk to your counselor or call/text 988. You deserve real support 💛`,
-      ]},
-  ];
-
-  // Context-aware response matching
-  function getSmartReply(userText) {
-    const lower = userText.toLowerCase();
-    for (const rule of RESPONSE_RULES) {
-      if (rule.keywords.some(kw => lower.includes(kw))) {
-        return rule.replies[Math.floor(Math.random() * rule.replies.length)];
-      }
-    }
-    return null;
-  }
-
-  // ── CLAUDE AI MENTAL HEALTH CHATBOT ─────────────────────
-  const SYSTEM_PROMPT = isAdmin
-    ? `You are Buddy, a warm and empathetic mental health support companion for school administrators and counselors. Your role is to support the wellbeing of staff who spend their days caring for others.
-Personality: Warm, non-judgmental, gently curious. Use occasional emojis (💙🌿💛🌟) but sparingly — never more than one per message. Keep messages short (2–4 sentences max).
-Guidelines:
-- Acknowledge feelings first before offering advice.
-- Remind them their own wellbeing matters, not just their students'.
-- Offer practical micro-strategies: box breathing, short breaks, setting boundaries.
-- If they seem in crisis, gently direct them to 988 or a trusted colleague.
-- Never diagnose, prescribe, or claim to replace professional mental health care.
-- Always end with a short open question to keep the dialogue going.
-- The user's name is: ${userName || 'there'}.`
-    : `You are Buddy, a warm and empathetic mental health support companion for students. Your goal is to make students feel heard, less alone, and gently supported.
-Personality: Friendly, non-judgmental, encouraging. Use occasional emojis (💛🌟😊🌿🌬️) but sparingly — never more than one per message. Keep messages concise (2–4 sentences max).
-Guidelines:
-- Always validate feelings before offering suggestions.
-- For anxiety: offer grounding techniques (5-4-3-2-1, 4-7-8 breathing).
-- For academic stress: remind them their worth ≠ their grades; suggest small steps.
-- For loneliness: gently encourage one small social action or reaching out to a counselor.
-- For positive check-ins: celebrate with them and invite them to share more.
-- If a student seems in crisis, compassionately direct them to their school counselor (Contact tab) or call/text 988.
-- Never diagnose, prescribe, or claim to replace professional mental health care.
-- Always end with a short open question to keep the conversation going.
-- The student's name is: ${userName || 'there'}.`;
-
-  // Conversation history for context
-  const history = [];
-  const MAX_HISTORY = 10;
-
-  async function getAIReply(userText) {
-    history.push({ role: 'user', content: userText });
-    if (history.length > MAX_HISTORY * 2) history.splice(0, 2);
-
-    // 1. Smart keyword-based contextual response (crisis + strong matches)
-    const smart = getSmartReply(userText);
-    if (smart) {
-      history.push({ role: 'assistant', content: smart });
-      return smart;
-    }
-
-    // 2. Claude AI mental health chatbot for everything else
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: history,
-        }),
-      });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const data = await res.json();
-      const reply = data?.content?.find(b => b.type === 'text')?.text?.trim();
-      if (reply) {
-        history.push({ role: 'assistant', content: reply });
-        return reply;
-      }
-      throw new Error('empty response');
-    } catch (err) {
-      console.warn('[Buddy] Claude API error:', err);
-      // 3. Fallback to local empathetic responses if API is down
-      const fb = getFallback();
-      history.push({ role: 'assistant', content: fb });
-      return fb;
-    }
-  }
-
-  // ── FALLBACK MESSAGES (if API is down) ───────────────────
-  const FALLBACKS_STUDENT = [
-    `Hey, I hear you 💛 Sometimes just putting words to things helps. How are you feeling right now?`,
-    `You're doing better than you think. What's weighing on you today?`,
-    `It's okay to feel that way. Want to try a quick breathing exercise together? 🌬️`,
-    `You're not alone in this. I'm right here. Keep talking if you want 😊`,
-    `That sounds really tough. One thing at a time what feels most manageable right now?`,
-  ];
-  const FALLBACKS_ADMIN = [
-    `That sounds exhausting. You carry a lot, how are YOU doing, really? 💙`,
-    `Even counselors need someone to lean on. I'm here for you 💛`,
-    `You can't pour from an empty cup. What would 5 minutes of rest look like today?`,
-  ];
-  const fallbacks = isAdmin ? FALLBACKS_ADMIN : FALLBACKS_STUDENT;
-  let fbIdx = 0;
-  function getFallback() { return fallbacks[fbIdx++ % fallbacks.length]; }
-
-  // ── PROACTIVE MESSAGES (auto-pop while chat is open) ──────
-  const PROACTIVE_STUDENT = [
-    `Hey ${name}! Just checking in 💛 How's your day going so far?`,
-    `Remember to drink some water! Hydration really does help 💧`,
-    `You've got this. One step at a time 🌟`,
-    `Quick tip: a 4-7-8 breath can calm your nervous system in under a minute 🌬️`,
-    `Hard days don't last forever. You've survived every single one so far 💪`,
-    `Small progress is still progress. Be proud of yourself today!`,
-  ];
-  const PROACTIVE_ADMIN = [
-    `Hey ${name}! Don't forget to take a real break today. You've earned it ☕`,
-    `You're making a real difference, even when it doesn't feel like it 🌟`,
-    `Quick reminder: your wellbeing matters just as much as your students' 💙`,
-    `Compassion fatigue is real. Be gentle with yourself 💛`,
-  ];
-  const proactivePool = isAdmin ? PROACTIVE_ADMIN : PROACTIVE_STUDENT;
-
-  const GREETING = isAdmin
-    ? `Hey ${name}! 👋 I'm Buddy, your support companion. You take care of students all day. I'm here to take care of you a little. You can talk to me about anything. How are you doing today?`
-    : `Hey ${name}! 👋 I'm Buddy, your mental health companion. I'm here to listen, cheer you on, and help you through tough moments. Feel free to type anything, I'm all ears 💛`;
-
   const NPC_IMAGE = 'duckbuddy.png';
+
+  // ── CONVERSATION TREE ──────────────────────────────────────
+  // Each node: { id, message, choices: [{ label, next }] }
+  // If choices is empty/missing, it's a terminal node.
+  // Special next values:
+  //   'RESTART'  → go back to root
+  //   'END'      → show a "restart" button only
+  //   'CRISIS'   → show crisis message + restart
+
+  const STUDENT_TREE = {
+    root: {
+      message: `Hey ${name}! 👋 I'm Buddy, your mental health companion. I'm here to listen and support you. How are you feeling today?`,
+      choices: [
+        { label: '😊 Pretty good!',      next: 'good' },
+        { label: '😔 Not so great',      next: 'notgreat' },
+        { label: '😰 Really struggling', next: 'struggling' },
+      ]
+    },
+
+    // ── GOOD BRANCH ──────────────────────────────────────────
+    good: {
+      message: `That's so great to hear! 🌟 I'm really glad. What's making today good for you?`,
+      choices: [
+        { label: '📚 School is going well',  next: 'good_school' },
+        { label: '👫 Spending time with friends', next: 'good_friends' },
+        { label: '😌 Just feeling calm',     next: 'good_calm' },
+      ]
+    },
+    good_school: {
+      message: `That's awesome! Academic wins feel so satisfying 🎉 Keep that energy going — you're doing great. Is there anything else on your mind?`,
+      choices: [
+        { label: '✅ Nope, all good!',        next: 'closing_good' },
+        { label: '🤔 Actually, there is…',    next: 'notgreat' },
+      ]
+    },
+    good_friends: {
+      message: `Friends really do make everything better 💛 Those connections matter so much. Keep nurturing them!`,
+      choices: [
+        { label: '✅ Thanks, Buddy!',         next: 'closing_good' },
+        { label: '🤔 I do have something on my mind', next: 'notgreat' },
+      ]
+    },
+    good_calm: {
+      message: `A calm day is a gift! 🌿 Take a moment to appreciate how you feel right now — you deserve it.`,
+      choices: [
+        { label: '✅ Will do, thanks!',       next: 'closing_good' },
+        { label: '🤔 I want to talk about something', next: 'notgreat' },
+      ]
+    },
+    closing_good: {
+      message: `I'm really happy for you, ${name} 😊 Remember, I'm always here whenever you need to talk. Take care of yourself today!`,
+      choices: [
+        { label: '🔄 Start over',             next: 'RESTART' },
+      ]
+    },
+
+    // ── NOT GREAT BRANCH ─────────────────────────────────────
+    notgreat: {
+      message: `I hear you 💛 It's okay to not be okay. Can you tell me a bit more? What's weighing on you?`,
+      choices: [
+        { label: '📖 School / academic stress', next: 'stress_school' },
+        { label: '😞 Feeling sad or down',      next: 'sad' },
+        { label: '😟 Anxiety or worry',         next: 'anxiety' },
+        { label: '😶 Feeling lonely',           next: 'lonely' },
+      ]
+    },
+    stress_school: {
+      message: `Academic pressure is SO real, and it can feel overwhelming. But remember — your grade is not your worth 💛 What part of school feels hardest right now?`,
+      choices: [
+        { label: '📝 Upcoming exams or deadlines', next: 'stress_exams' },
+        { label: '📉 Worried about my grades',     next: 'stress_grades' },
+        { label: '😵 Just everything at once',     next: 'stress_overwhelm' },
+      ]
+    },
+    stress_exams: {
+      message: `Exam pressure is tough! Try breaking it down: pick ONE thing to study for 25 minutes, then take a 5-minute break (that's the Pomodoro method 🍅). Small steps add up. Have you talked to your teacher about how you're feeling?`,
+      choices: [
+        { label: '✅ Yes, they know',         next: 'support_offered' },
+        { label: '❌ No, not yet',            next: 'suggest_counselor' },
+      ]
+    },
+    stress_grades: {
+      message: `Grades can feel like everything — but they really aren't. You are so much more than a number 💛 One thing that helps: talk to your teacher early. They'd rather help you than see you struggle. Want to explore that?`,
+      choices: [
+        { label: '✅ Maybe I should reach out', next: 'suggest_counselor' },
+        { label: '😔 I\'m scared to ask',      next: 'fear_of_asking' },
+      ]
+    },
+    fear_of_asking: {
+      message: `That fear is totally normal, but teachers genuinely want to help — it's literally their job to support you 😊 Starting with "I'm struggling and I'm not sure what to do" is enough. You can also talk to your school counselor first if that feels safer.`,
+      choices: [
+        { label: '💬 I\'ll try talking to someone', next: 'suggest_counselor' },
+        { label: '🔄 Start over',                    next: 'RESTART' },
+      ]
+    },
+    stress_overwhelm: {
+      message: `When everything piles up it can feel impossible to know where to start 😔 Here's a trick: write down every task, then circle just ONE you can do today. That's it. Just one. Can you try that?`,
+      choices: [
+        { label: '✅ I\'ll try that',          next: 'support_offered' },
+        { label: '💬 I need more support',     next: 'suggest_counselor' },
+      ]
+    },
+    sad: {
+      message: `I'm sorry you're feeling sad 💛 Those feelings are valid and they won't last forever. How long have you been feeling this way?`,
+      choices: [
+        { label: '📅 Just today or a few days',  next: 'sad_recent' },
+        { label: '📆 A while now — weeks',       next: 'sad_prolonged' },
+        { label: '🌑 A really long time',        next: 'sad_serious' },
+      ]
+    },
+    sad_recent: {
+      message: `Sometimes our emotions just need space to pass. Be gentle with yourself today 🌿 A short walk, a good playlist, or even just resting can help. Is there something specific that triggered this?`,
+      choices: [
+        { label: '✅ Yes, I know what it is',   next: 'sad_trigger_known' },
+        { label: '🤷 Not really sure',          next: 'support_offered' },
+      ]
+    },
+    sad_trigger_known: {
+      message: `It helps to name it — that takes real self-awareness 💛 Sometimes talking to someone you trust makes a huge difference. Would you like to connect with your school counselor?`,
+      choices: [
+        { label: '✅ Yes, please',             next: 'suggest_counselor' },
+        { label: '🙏 I just needed to share',  next: 'support_offered' },
+      ]
+    },
+    sad_prolonged: {
+      message: `Feeling sad for weeks is really hard, and I want you to know — you don't have to push through this alone. Talking to a counselor could really help. They're trained exactly for this 💙`,
+      choices: [
+        { label: '💬 Okay, I\'ll reach out',   next: 'suggest_counselor' },
+        { label: '😟 I\'m nervous to',         next: 'fear_of_asking' },
+      ]
+    },
+    sad_serious: {
+      message: `Thank you for trusting me with this 💛 When sadness lasts a long time, it's really important to talk to a professional. Please reach out to your school counselor through the Contact tab, or call/text 988 anytime. You deserve real support.`,
+      choices: [
+        { label: '💬 I\'ll contact my counselor', next: 'suggest_counselor' },
+        { label: '📞 Tell me about 988',          next: 'crisis_988' },
+      ]
+    },
+    anxiety: {
+      message: `Anxiety is exhausting 😔 Your feelings are valid. Let's try something right now: name 5 things you can SEE around you. It pulls your mind back to the present. Ready?`,
+      choices: [
+        { label: '✅ I tried it — it helped a bit', next: 'anxiety_helped' },
+        { label: '😰 I\'m too anxious to focus',    next: 'anxiety_bad' },
+      ]
+    },
+    anxiety_helped: {
+      message: `Great! That's the 5-4-3-2-1 grounding technique 🌬️ It genuinely works. You can also try breathing: inhale 4 counts, hold 4, exhale 4. What's making you most anxious right now?`,
+      choices: [
+        { label: '📚 School or exams',         next: 'stress_school' },
+        { label: '👥 Social situations',       next: 'anxiety_social' },
+        { label: '❓ Not really sure',         next: 'support_offered' },
+      ]
+    },
+    anxiety_bad: {
+      message: `That's okay — when anxiety is really strong, it's hard to do anything. Please know this feeling WILL pass 💛 If anxiety is affecting your daily life a lot, talking to your counselor can make a real difference. Want to do that?`,
+      choices: [
+        { label: '✅ Yes, I want to talk to someone', next: 'suggest_counselor' },
+        { label: '💬 Just talk to me more',           next: 'support_offered' },
+      ]
+    },
+    anxiety_social: {
+      message: `Social anxiety is really common, especially in school. You're not weird or broken 💛 A small step: try making eye contact and smiling at one person today. That's it. Would you like to chat with a counselor about this?`,
+      choices: [
+        { label: '✅ Maybe yes',               next: 'suggest_counselor' },
+        { label: '🙏 Thanks, I feel better',   next: 'support_offered' },
+      ]
+    },
+    lonely: {
+      message: `Loneliness is one of the hardest feelings. But you're here, you reached out — that already takes courage 💛 How long have you been feeling this way?`,
+      choices: [
+        { label: '📅 Just recently',           next: 'lonely_recent' },
+        { label: '📆 For a while now',         next: 'lonely_prolonged' },
+      ]
+    },
+    lonely_recent: {
+      message: `Sometimes loneliness hits us out of nowhere. Is there one person — a classmate, family member, anyone — you could send a message to today? Even just "hey 👋" counts.`,
+      choices: [
+        { label: '✅ Yeah, I can try that',    next: 'support_offered' },
+        { label: '😞 I don\'t think so',       next: 'lonely_prolonged' },
+      ]
+    },
+    lonely_prolonged: {
+      message: `Feeling disconnected for a long time is really painful, and you deserve real connection 💙 Your school counselor can help you find ways to build friendships in a safe, supported way. Would you like to reach out to them?`,
+      choices: [
+        { label: '✅ Yes, I\'ll try',          next: 'suggest_counselor' },
+        { label: '💬 I just needed to be heard', next: 'support_offered' },
+      ]
+    },
+
+    // ── STRUGGLING BRANCH ────────────────────────────────────
+    struggling: {
+      message: `I'm really glad you told me 💛 You don't have to go through this alone. Are you having thoughts of hurting yourself or others?`,
+      choices: [
+        { label: '✅ No, nothing like that',   next: 'notgreat' },
+        { label: '😔 Yes, sometimes',          next: 'CRISIS' },
+      ]
+    },
+
+    // ── SHARED ENDPOINTS ─────────────────────────────────────
+    support_offered: {
+      message: `I'm really glad you shared that with me. You're stronger than you think, ${name} 🌟 Remember, your school counselor is always available through the Contact tab. Is there anything else on your mind?`,
+      choices: [
+        { label: '❓ Yes, something else',     next: 'notgreat' },
+        { label: '✅ No, I feel a bit better', next: 'closing_good' },
+      ]
+    },
+    suggest_counselor: {
+      message: `That's a really brave step 💛 You can reach your school counselor right through the Contact tab in the app. They're trained to help and they genuinely care. You've got this 💪`,
+      choices: [
+        { label: '✅ Thanks, I\'ll do that',    next: 'closing_good' },
+        { label: '🔄 Start over',             next: 'RESTART' },
+      ]
+    },
+    crisis_988: {
+      message: `988 is the Suicide & Crisis Lifeline 💙 You can call OR text 988 anytime — it's free, confidential, and available 24/7. Real people answer who genuinely care. Please reach out — you matter so much.`,
+      choices: [
+        { label: '💬 I\'ll reach out',         next: 'closing_good' },
+        { label: '🔄 Start over',             next: 'RESTART' },
+      ]
+    },
+  };
+
+  const ADMIN_TREE = {
+    root: {
+      message: `Hey ${name}! 👋 I'm Buddy, your wellbeing companion. You spend all day caring for others — I'm here to take care of you a little. How are you feeling today?`,
+      choices: [
+        { label: '😊 Doing well today',        next: 'good' },
+        { label: '😴 Tired and drained',       next: 'tired' },
+        { label: '😟 Stressed or overwhelmed', next: 'stressed' },
+      ]
+    },
+
+    // ── GOOD BRANCH ──────────────────────────────────────────
+    good: {
+      message: `That's wonderful to hear! 🌟 What's contributing to that today?`,
+      choices: [
+        { label: '📈 Things are going smoothly',  next: 'good_smooth' },
+        { label: '💪 I made a difference today',  next: 'good_impact' },
+        { label: '😌 Just a calm day',            next: 'good_calm' },
+      ]
+    },
+    good_smooth: {
+      message: `Smooth days are a blessing — savour it! ☕ Even when things are good, remember to pace yourself. Sustainability matters. Is there anything you want to make sure you protect about today?`,
+      choices: [
+        { label: '✅ Just my sanity, ha!',       next: 'closing_good' },
+        { label: '🤔 Actually, I want to talk about something', next: 'stressed' },
+      ]
+    },
+    good_impact: {
+      message: `That feeling — knowing you made a real difference — that's why you do this 💙 Hold on to it. You are genuinely appreciated, even when no one says it.`,
+      choices: [
+        { label: '✅ Thanks, I needed that!',    next: 'closing_good' },
+        { label: '🔄 Start over',               next: 'RESTART' },
+      ]
+    },
+    good_calm: {
+      message: `Calm days are rare in your role — enjoy every second! 🌿 Take a real lunch break if you can. You've earned it.`,
+      choices: [
+        { label: '✅ I will, thank you!',        next: 'closing_good' },
+        { label: '🔄 Start over',               next: 'RESTART' },
+      ]
+    },
+    closing_good: {
+      message: `I'm glad you're doing well, ${name} 💙 Keep taking care of yourself — you can't pour from an empty cup. I'm always here when you need to talk.`,
+      choices: [
+        { label: '🔄 Start over',               next: 'RESTART' },
+      ]
+    },
+
+    // ── TIRED BRANCH ─────────────────────────────────────────
+    tired: {
+      message: `Compassion fatigue is real, ${name} 💙 You give so much every day. How long has this tiredness been building?`,
+      choices: [
+        { label: '📅 Just today — rough day',   next: 'tired_today' },
+        { label: '📆 A few weeks now',          next: 'tired_weeks' },
+        { label: '🌑 For a very long time',     next: 'tired_burnout' },
+      ]
+    },
+    tired_today: {
+      message: `One rough day doesn't define your work. Before you sleep tonight, try this: write down ONE thing you did well today — no matter how small. You need to see your own wins 💛`,
+      choices: [
+        { label: '✅ I can do that',            next: 'support_offered' },
+        { label: '😔 There\'s more to it',      next: 'stressed' },
+      ]
+    },
+    tired_weeks: {
+      message: `Weeks of tiredness is your body asking for a reset 🌿 What's one thing you can take off your plate this week — even just one task you can delegate or postpone?`,
+      choices: [
+        { label: '🤔 Let me think about that',  next: 'tired_boundaries' },
+        { label: '😔 Everything feels urgent',  next: 'tired_burnout' },
+      ]
+    },
+    tired_boundaries: {
+      message: `Setting boundaries — even small ones — can make a real difference. Try protecting just 15 minutes each day for yourself. No emails, no students. Just you 💙 Would talking to a colleague or mentor about workload help?`,
+      choices: [
+        { label: '✅ That sounds good',         next: 'support_offered' },
+        { label: '😞 I feel like I can\'t say no', next: 'tired_burnout' },
+      ]
+    },
+    tired_burnout: {
+      message: `What you're describing sounds like burnout, and that's serious — it's not a weakness, it means you've been strong for too long 💛 Please speak with a trusted colleague or HR, and consider talking to a professional. Your wellbeing matters just as much as your students'.`,
+      choices: [
+        { label: '💬 I\'ll reach out to someone', next: 'suggest_support' },
+        { label: '📞 Tell me about 988',         next: 'crisis_988' },
+      ]
+    },
+
+    // ── STRESSED BRANCH ──────────────────────────────────────
+    stressed: {
+      message: `Stress in your role is unavoidable — but you don't have to carry it alone 💙 What's weighing on you most right now?`,
+      choices: [
+        { label: '👥 Managing student crises',   next: 'stress_students' },
+        { label: '📋 Administrative pressure',   next: 'stress_admin' },
+        { label: '🏠 Work-life balance',         next: 'stress_balance' },
+      ]
+    },
+    stress_students: {
+      message: `Holding space for students in crisis while keeping yourself grounded is incredibly hard. Try this: after a difficult interaction, give yourself 5 minutes before your next task — even just breathing. Do you have a colleague to debrief with?`,
+      choices: [
+        { label: '✅ Yes, I have someone',       next: 'support_offered' },
+        { label: '❌ Not really',                next: 'suggest_support' },
+      ]
+    },
+    stress_admin: {
+      message: `Admin pressure can be relentless. Try identifying the ONE task that, if done today, would relieve the most pressure — then start there. Everything else can wait. Is your workload actually sustainable long-term?`,
+      choices: [
+        { label: '🤔 Honestly, no',             next: 'tired_burnout' },
+        { label: '✅ It\'s manageable',         next: 'support_offered' },
+      ]
+    },
+    stress_balance: {
+      message: `Work-life balance in education is a constant battle 🌿 One boundary worth protecting: try not to check emails after a set time each evening. Even one hour of "off" time matters. What would feel like relief right now?`,
+      choices: [
+        { label: '🛁 Some time to myself',      next: 'support_offered' },
+        { label: '💬 Someone to talk to',       next: 'suggest_support' },
+      ]
+    },
+
+    // ── SHARED ENDPOINTS ─────────────────────────────────────
+    support_offered: {
+      message: `You're doing important work, ${name}, and it shows 💙 Don't forget — your wellbeing has to come first before you can help others. Is there anything else you'd like to talk through?`,
+      choices: [
+        { label: '❓ Yes, one more thing',      next: 'stressed' },
+        { label: '✅ No, I feel a bit better',  next: 'closing_good' },
+      ]
+    },
+    suggest_support: {
+      message: `Having support matters so much. You can reach HR, your school's EAP (Employee Assistance Program), or a trusted mentor. A peer debrief after tough days can also help enormously. Please don't carry this alone 💙`,
+      choices: [
+        { label: '✅ I\'ll reach out',          next: 'closing_good' },
+        { label: '🔄 Start over',              next: 'RESTART' },
+      ]
+    },
+    crisis_988: {
+      message: `988 is the Suicide & Crisis Lifeline 💙 You can call OR text 988 anytime — free, confidential, 24/7. It's not only for students — it's for anyone. Please reach out. You matter.`,
+      choices: [
+        { label: '💬 Thank you',               next: 'closing_good' },
+        { label: '🔄 Start over',             next: 'RESTART' },
+      ]
+    },
+  };
+
+  const CRISIS_MESSAGE = `Thank you for trusting me with this — that takes real courage 💛 Please reach out to your school counselor through the Contact tab right now. If you're in immediate distress, call or text 988 — they're available 24/7 and genuinely care. You are not alone, and you matter so much.`;
+
+  const TREE = isAdmin ? ADMIN_TREE : STUDENT_TREE;
+
+  // ── IDLE CHECK-IN MESSAGES ────────────────────────────────
+  const IDLE_STUDENT = [
+    `Psst, still there ${name}? 👀 I'm here if you want to chat!`,
+    `Hey! You've been quiet — everything okay? 💛`,
+    `Don't forget, you can always talk to me about anything 😊`,
+    `Taking a break? That's perfectly okay! I'll be right here 🌿`,
+  ];
+  const IDLE_ADMIN = [
+    `Hey ${name}, still with me? How are you holding up? 💛`,
+    `You've been busy — don't forget to breathe 🌿`,
+    `I'm here whenever you need to vent or just talk 💙`,
+  ];
+  const idlePool = isAdmin ? IDLE_ADMIN : IDLE_STUDENT;
 
   // ── INJECT STYLES ─────────────────────────────────────────
   const CSS = `
@@ -228,7 +414,7 @@ Guidelines:
     /* ── WINDOW ── */
     #buddy-window {
       width: 320px;
-      max-height: 500px;
+      max-height: 520px;
       background: #fff; border-radius: 22px;
       box-shadow: 0 20px 60px rgba(19,42,63,0.18), 0 4px 16px rgba(0,0,0,0.08);
       display: flex; flex-direction: column; overflow: hidden;
@@ -330,39 +516,42 @@ Guidelines:
     .buddy-typing-dot:nth-child(3) { animation-delay: 0.36s; }
     @keyframes bTypeBounce { 0%,60%,100%{transform:translateY(0);background:#c5cad3} 30%{transform:translateY(-5px);background:#132A3F} }
 
-    /* ── INPUT AREA ── */
-    .buddy-input-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 12px; background: #fff;
-      border-top: 1px solid #f0f2f5; flex-shrink: 0;
+    /* ── CHOICE BUTTONS ── */
+    .buddy-choices {
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 4px 0 2px 35px;
+      animation: bMsgIn 0.3s cubic-bezier(.34,1.56,.64,1);
     }
-    #buddy-input {
-      flex: 1; border: 1.5px solid #e2e6ea; border-radius: 20px;
-      padding: 8px 14px; font-size: 12.5px; font-family: 'Nunito', sans-serif;
-      color: #132A3F; outline: none; transition: border-color 0.18s;
-      background: #f8f9fb; resize: none;
+    .buddy-choice-btn {
+      background: #fff; border: 1.5px solid #d1d5db;
+      border-radius: 12px; padding: 7px 12px;
+      font-size: 12px; font-weight: 700; color: #132A3F;
+      cursor: pointer; text-align: left; line-height: 1.4;
+      transition: background 0.18s, border-color 0.18s, transform 0.15s;
+      font-family: 'Nunito', sans-serif;
     }
-    #buddy-input:focus { border-color: #f9a825; background: #fff; }
-    #buddy-send {
-      width: 34px; height: 34px; border-radius: 50%;
-      background: #132A3F; border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      color: #f9d338; font-size: 13px; flex-shrink: 0;
-      transition: background 0.18s, transform 0.18s;
+    .buddy-choice-btn:hover {
+      background: #f9fafb; border-color: #f9a825;
+      transform: translateX(2px);
     }
-    #buddy-send:hover  { background: #1e3f5c; transform: scale(1.08); }
-    #buddy-send:active { transform: scale(0.92); }
-    #buddy-send:disabled { background: #e2e6ea; color: #aab0ba; cursor: default; }
+    .buddy-choice-btn:active { transform: scale(0.97); }
+    .buddy-choice-btn.selected {
+      background: #132A3F; color: #f9d338;
+      border-color: #132A3F; pointer-events: none;
+    }
+    .buddy-choices.disabled .buddy-choice-btn {
+      opacity: 0.45; pointer-events: none; cursor: default;
+    }
 
-    /* ── AI BADGE ── */
-    .buddy-ai-badge {
+    /* ── FOOTER BADGE ── */
+    .buddy-footer-badge {
       display: flex; align-items: center; gap: 5px;
       font-size: 10px; font-weight: 700; color: #aab0ba;
       padding: 5px 12px 6px; text-align: center; justify-content: center;
       background: #fff; border-top: 1px solid #f0f2f5; flex-shrink: 0;
       letter-spacing: 0.03em;
     }
-    .buddy-ai-badge i { color: #f9a825; }
+    .buddy-footer-badge i { color: #f9a825; }
 
     /* ── FAB ── */
     #buddy-fab {
@@ -405,11 +594,10 @@ Guidelines:
     [data-theme="dark"] .buddy-body        { background:#131e2d; }
     [data-theme="dark"] .buddy-bubble      { background:#1e2d3d; border-color:#2d3748; color:#e5e7eb; }
     [data-theme="dark"] .buddy-msg.user-msg .buddy-bubble { background:#132A3F; border-color:#1e3f5c; color:#fff; }
-    [data-theme="dark"] .buddy-input-row   { background:#1a2535; border-color:#2d3748; }
-    [data-theme="dark"] #buddy-input       { background:#131e2d; border-color:#2d3748; color:#e5e7eb; }
-    [data-theme="dark"] #buddy-input:focus { background:#1a2535; border-color:#f9a825; }
     [data-theme="dark"] .buddy-typing      { background:#1e2d3d; border-color:#2d3748; }
-    [data-theme="dark"] .buddy-ai-badge    { background:#1a2535; border-color:#2d3748; }
+    [data-theme="dark"] .buddy-choice-btn  { background:#1e2d3d; border-color:#2d3748; color:#e5e7eb; }
+    [data-theme="dark"] .buddy-choice-btn:hover { background:#263548; border-color:#f9a825; }
+    [data-theme="dark"] .buddy-footer-badge { background:#1a2535; border-color:#2d3748; }
   `;
 
   const styleEl = document.createElement('style');
@@ -424,26 +612,20 @@ Guidelines:
       <div class="buddy-header">
         <div class="buddy-header-avatar">
           <img src="${NPC_IMAGE}" alt="" id="bHeaderImg"/>
-          <span id="bHeaderEmoji">🤖</span>
+          <span id="bHeaderEmoji">🐥</span>
         </div>
         <div class="buddy-header-info">
           <div class="buddy-header-name">Buddy</div>
           <div class="buddy-header-status">
             <span class="buddy-status-dot"></span>
-            AI-powered · Here for you 💛
+            Here for you 💛
           </div>
         </div>
         <button class="buddy-close-btn" id="bCloseBtn" title="Close">✕</button>
       </div>
       <div class="buddy-body" id="bBody"></div>
-      <div class="buddy-input-row">
-        <input type="text" id="buddy-input" placeholder="Talk to Buddy…" autocomplete="off" maxlength="500"/>
-        <button id="buddy-send" title="Send">
-          <i class="fa-solid fa-paper-plane"></i>
-        </button>
-      </div>
-      <div class="buddy-ai-badge">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> Powered by AI · Not a substitute for professional help
+      <div class="buddy-footer-badge">
+        <i class="fa-solid fa-heart"></i> Not a substitute for professional help
       </div>
     </div>
 
@@ -451,7 +633,7 @@ Guidelines:
 
     <button id="buddy-fab" title="Open Buddy">
       <img src="${NPC_IMAGE}" alt="Buddy" class="buddy-fab-img" id="bFabImg"/>
-      <span class="buddy-fab-emoji" id="bFabEmoji">🤖</span>
+      <span class="buddy-fab-emoji" id="bFabEmoji">🐥</span>
       <div id="buddy-fab-dot"></div>
     </button>
   `;
@@ -474,25 +656,17 @@ Guidelines:
   const closeBtn = document.getElementById('bCloseBtn');
   const tooltip  = document.getElementById('buddy-tooltip');
   const fabDot   = document.getElementById('buddy-fab-dot');
-  const inputEl  = document.getElementById('buddy-input');
-  const sendBtn  = document.getElementById('buddy-send');
 
   // ── STATE ─────────────────────────────────────────────────
-  let isOpen    = false;
-  let hasOpened = false;
-  let idleTimer = null;
-  let proactiveTimer = null;
-  let tooltipTimer   = null;
-  let proactiveIdx   = 0;
-  let isThinking     = false;
+  let isOpen       = false;
+  let hasOpened    = false;
+  let idleTimer    = null;
+  let tooltipTimer = null;
 
-  const PROACTIVE_INTERVAL = 50 * 1000;  // 50s
-  const IDLE_TIMEOUT_MS    = 3 * 60 * 1000;
-
-  const shuffledProactive = [...proactivePool].sort(() => Math.random() - 0.5);
+  const IDLE_TIMEOUT_MS = 3 * 60 * 1000;
 
   // ── HELPERS ───────────────────────────────────────────────
-  function scrollBottom() { setTimeout(() => { bodyEl.scrollTop = bodyEl.scrollHeight; }, 50); }
+  function scrollBottom() { setTimeout(() => { bodyEl.scrollTop = bodyEl.scrollHeight; }, 60); }
 
   function makeMiniAvatar() {
     const wrap = document.createElement('div');
@@ -502,7 +676,7 @@ Guidelines:
     img.onload  = () => img.classList.add('loaded');
     img.onerror = () => img.style.display = 'none';
     const em  = document.createElement('span');
-    em.className = 'bm-emoji'; em.textContent = '🤖';
+    em.className = 'bm-emoji'; em.textContent = '🐥';
     wrap.appendChild(img); wrap.appendChild(em);
     return wrap;
   }
@@ -514,6 +688,7 @@ Guidelines:
     tooltipTimer = setTimeout(() => tooltip.classList.remove('show'), 5000);
   }
 
+  // ── ADD BUBBLES ───────────────────────────────────────────
   function addUserBubble(text) {
     const row = document.createElement('div');
     row.className = 'buddy-msg user-msg';
@@ -556,50 +731,75 @@ Guidelines:
     }
   }
 
-  // Animate typing then show bubble (for proactive/automated messages)
-  function typeMessage(text, delayMs = 0) {
-    setTimeout(() => {
-      showTyping();
-      const typeMs = Math.min(700 + text.length * 14, 2000);
-      setTimeout(() => {
-        removeTyping();
-        addBuddyBubble(text);
-      }, typeMs);
-    }, delayMs);
+  // ── SHOW CHOICES ──────────────────────────────────────────
+  function addChoices(choices) {
+    const wrap = document.createElement('div');
+    wrap.className = 'buddy-choices';
+
+    choices.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.className = 'buddy-choice-btn';
+      btn.textContent = choice.label;
+      btn.addEventListener('click', () => {
+        // Disable all sibling buttons
+        wrap.classList.add('disabled');
+        btn.classList.add('selected');
+
+        // Show as user message
+        addUserBubble(choice.label);
+
+        // Navigate to next node
+        setTimeout(() => handleNode(choice.next), 350);
+      });
+      wrap.appendChild(btn);
+    });
+
+    bodyEl.appendChild(wrap);
+    scrollBottom();
   }
 
-  // ── SEND USER MESSAGE ─────────────────────────────────────
-  async function sendMessage() {
-    const text = inputEl.value.trim();
-    if (!text || isThinking) return;
+  // ── CONVERSATION ENGINE ───────────────────────────────────
+  function handleNode(nodeId) {
+    // Special actions
+    if (nodeId === 'RESTART') {
+      setTimeout(() => handleNode('root'), 400);
+      return;
+    }
+    if (nodeId === 'CRISIS') {
+      showNodeWithDelay(CRISIS_MESSAGE, [{ label: '🔄 Start over', next: 'RESTART' }]);
+      return;
+    }
+    if (nodeId === 'END') {
+      showNodeWithDelay(null, [{ label: '🔄 Start over', next: 'RESTART' }]);
+      return;
+    }
 
-    inputEl.value = '';
-    addUserBubble(text);
-    isThinking = true;
-    sendBtn.disabled = true;
-    inputEl.disabled = true;
+    const node = TREE[nodeId];
+    if (!node) {
+      console.warn('[Buddy] Unknown node:', nodeId);
+      return;
+    }
+    showNodeWithDelay(node.message, node.choices || []);
+  }
+
+  function showNodeWithDelay(message, choices) {
+    if (!message) {
+      addChoices(choices);
+      return;
+    }
 
     showTyping();
+    const typeMs = Math.min(600 + message.length * 12, 1800);
 
-    // Realistic delay: slight pause before thinking
-    await new Promise(r => setTimeout(r, 400));
+    setTimeout(() => {
+      removeTyping();
+      addBuddyBubble(message);
 
-    const reply = await getAIReply(text);
-
-    removeTyping();
-    addBuddyBubble(reply);
-
-    isThinking = false;
-    sendBtn.disabled = false;
-    inputEl.disabled = false;
-    inputEl.focus();
-    resetIdleTimer();
+      if (choices && choices.length > 0) {
+        setTimeout(() => addChoices(choices), 200);
+      }
+    }, typeMs);
   }
-
-  sendBtn.addEventListener('click', sendMessage);
-  inputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
 
   // ── OPEN / CLOSE ──────────────────────────────────────────
   function openChat() {
@@ -611,54 +811,32 @@ Guidelines:
 
     if (!hasOpened) {
       hasOpened = true;
-      typeMessage(GREETING, 350);
-      scheduleProactive();
-    } else {
-      scheduleProactive();
+      setTimeout(() => handleNode('root'), 350);
     }
 
     resetIdleTimer();
-    setTimeout(() => inputEl.focus(), 380);
   }
 
   function closeChat() {
     isOpen = false;
     win.classList.remove('open');
-    clearInterval(proactiveTimer);
     setTimeout(() => { fab.style.animation = ''; }, 120);
   }
 
   fab.addEventListener('click', () => isOpen ? closeChat() : openChat());
   closeBtn.addEventListener('click', closeChat);
 
-  // ── PROACTIVE MESSAGES ────────────────────────────────────
-  function scheduleProactive() {
-    clearInterval(proactiveTimer);
-    proactiveTimer = setInterval(() => {
-      const msg = shuffledProactive[proactiveIdx++ % shuffledProactive.length];
-      typeMessage(msg);
-    }, PROACTIVE_INTERVAL);
-  }
-
   // ── IDLE CHECK-IN ─────────────────────────────────────────
-  const IDLE_STUDENT = [
-    `Psst, still there ${name}? 👀 I'm here if you want to chat!`,
-    `Hey! You've been quiet, everything okay? 💛`,
-    `Don't forget, you can always talk to me, about anything 😊`,
-    `Taking a break? That's perfectly okay! I'll be here 🌿`,
-  ];
-  const IDLE_ADMIN = [
-    `Hey ${name}, still with me? How are you holding up? 💛`,
-    `You've been busy, don't forget to breathe 🌿`,
-    `I'm here whenever you need to vent or just talk 💙`,
-  ];
-  const idlePool = isAdmin ? IDLE_ADMIN : IDLE_STUDENT;
-
   function resetIdleTimer() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
       const msg = idlePool[Math.floor(Math.random() * idlePool.length)];
-      typeMessage(msg);
+      // Show idle message as a standalone bubble (no choices)
+      showTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBuddyBubble(msg);
+      }, 900);
       if (!isOpen) {
         fabDot.classList.add('show');
         showTooltip(`Buddy is <span>checking in on you</span> 💛`);

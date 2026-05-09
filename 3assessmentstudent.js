@@ -1061,6 +1061,9 @@ function renderModePicker(container, weekInfo, onSelect) {
   const regularModes = MODE_DEFS.filter(m => m.id !== 'light');
   const lightMode    = MODE_DEFS.find(m => m.id === 'light');
 
+  // Detect gap reset: has submitted before, not week 2, not first ever
+  const isGapReset = !isFirstEver && !isWeek2;
+
   const weekBadge = isFirstEver ? `
     <div class="ga-week-badge">
       <div class="ga-week-badge-icon">👋</div>
@@ -1073,10 +1076,12 @@ function renderModePicker(container, weekInfo, onSelect) {
     <div class="ga-week-badge">
       <div class="ga-week-badge-icon">${isWeek2 ? '✅' : '📝'}</div>
       <div class="ga-week-badge-text">
-        <div class="ga-week-badge-title">${isWeek2 ? 'Week 2 — Final Evaluation' : 'Week 1 — Check-in'}</div>
+        <div class="ga-week-badge-title">${isWeek2 ? 'Week 2 — Final Evaluation' : 'Week 1 — New Cycle'}</div>
         <div class="ga-week-badge-sub">${isWeek2
           ? "This week's result combines with last week's for your 2-week wellness evaluation."
-          : 'Come back next Monday for Week 2 to get a full 2-week wellness picture.'
+          : isGapReset
+            ? "It's been more than a week since your last check-in, so a fresh 2-week cycle is starting. Complete Week 2 next Monday for a full evaluation."
+            : 'Come back next Monday for Week 2 to get a full 2-week wellness picture.'
         }</div>
       </div>
       <div class="ga-week-badge-pill ${isWeek2 ? 'week2' : ''}">${isWeek2 ? '🔔 Evaluation' : '📊 Week 1'}</div>
@@ -1710,12 +1715,10 @@ function runSteps(container, mode, { streak, xp }, weekInfo) {
 async function renderAssessment(container) {
   injectGameStyles();
 
-  const monday = isMonday();
-
   // Check this week's submission
   const thisWeekSubmission = await checkThisWeekSubmission();
 
-  // If already submitted this week, show locked screen
+  // Lock only if already submitted this week — open any day until then, reopens next Monday.
   if (thisWeekSubmission) {
     await renderNotMonday(container, thisWeekSubmission);
     return;
@@ -1724,13 +1727,6 @@ async function renderAssessment(container) {
   // Check if this student has EVER submitted before
   const lastTwo = await getLastTwoWeekSubmissions();
   const hasEverSubmitted = lastTwo.length > 0;
-
-  // New users (never submitted) can answer any day for their first time.
-  // Returning users must wait for Monday.
-  if (!monday && hasEverSubmitted) {
-    await renderNotMonday(container, null);
-    return;
-  }
 
   // weekNumber: if there was a submission last week, this is week 2, else week 1
   let weekNumber = 1;
